@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Análise de Pico e FFT com Seleção Visual</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f9; color: #333; }
+        .controls { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+        button, .btn-upload { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; font-weight: bold; text-align: center; font-size: 14px;}
+        button:disabled { background: #ccc; cursor: not-allowed; }
+        button.stop { background: #dc3545; }
+        button.analyze { background: #28a745; }
+        button.play { background: #17a2b8; }
+        button.save { background: #fd7e14; }
+        
+        .btn-upload { background: #6f42c1; position: relative; overflow: hidden; display: inline-block; }
+        .btn-upload input[type="file"] { position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity=0); opacity: 0; outline: none; cursor: pointer; display: block; }
+        
+        canvas { width: 100%; height: 150px; background: #222; border-radius: 8px; margin-top: 5px; cursor: crosshair; }
+        
+        .selection-info { font-weight: bold; width: 100%; margin-top: 10px; }
+        .result { margin-top: 20px; padding: 15px; background: #e2e3e5; border-radius: 8px; font-size: 1.1em; }
+        #status { font-weight: bold; margin-left: auto; }
+    </style>
+</head>
+<body>
+
+    <h2>Analisador de Áudio Interativo</h2>
+    
+    <div class="controls">
+        <button id="btnRecord">🎤 Gravar Som</button>
+        <button id="btnStop" class="stop" disabled>⏹ Parar Gravação</button>
+        
+        <!-- Botão para carregar arquivo -->
+        <div class="btn-upload">
+            📁 Carregar Arquivo
+            <input type="file" id="fileInput" accept="audio/*">
+        </div>
+        
+        <span id="status">Aguardando áudio...</span>
+    </div>
+
+    <canvas id="waveform" width="800" height="150"></canvas>
+
+    <div class="controls">
+        <div class="selection-info">
+            Faixa Selecionada: <span id="startVal">0.00</span>s até <span id="endVal">0.00</span>s
+            <p style="font-weight: normal; font-size: 0.9em; color: #555; margin-top: 5px;"><em>Dica: Clique e arraste sobre a onda para selecionar.</em></p>
+        </div>
+        
+        <button id="btnPlay" class="play" disabled>▶ Reproduzir Seleção</button>
+        <button id="btnAnalyze" class="analyze" disabled>🔍 Analisar Faixa</button>
+        <button id="btnSave" class="save" disabled>💾 Salvar Seleção (WAV)</button>
+    </div>
+
+    <div class="result" id="result">
+        Os resultados da análise aparecerão aqui.
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioContext;
+        let audioBuffer = null;
+        let currentSource = null;
+
+        let isDragging = false;
+        let selStartTime = 0;
+        let selEndTime = 0;
+
+        const btnRecord = document.getElementById('btnRecord');
+        const btnStop = document.getElementById('btnStop');
+        const fileInput = document.getElementById('fileInput');
+        const btnPlay = document.getElementById('btnPlay');
+        const btnAnalyze = document.getElementById('btnAnalyze');
+        const btnSave = document.getElementById('btnSave');
+        const statusSpan = document.getElementById('status');
+        const canvas = document.getElementById('waveform');
+        const ctx = canvas.getContext('2d');
+        const startVal = document.getElementById('startVal');
+        const endVal = document.getElementById('endVal');
+
+        function initAudioContext() {
+            if (!audioContext) {
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        // 1. Carregar Áudio de Arquivo
+        fileInput.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) return;
+
+            initAudioContext();
+            statusSpan.innerText = "Carregando...";
+            statusSpan.style.color = "blue";
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    audioBuffer = await audioContext.decodeAudioData(e.target.result);
+                    selStartTime = 0;
+                    selEndTime = audioBuffer.duration;
+                    updateUI();
+                    statusSpan.innerText = "Áudio carregado!";
+                    statusSpan.style.color = "green";
+                } catch (err) {
+                    alert("Erro ao decodificar o arquivo de áudio.");
+                    statusSpan.innerText = "Erro ao carregar.";
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+
+        // 2. Gravação de Áudio (Microfone)
+        btnRecord.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                initAudioContext();
+                mediaRecorder = new MediaRecorder(stream);
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+                
+                mediaRecorder.onstop = async () => {
+                    const audioBlob = new Blob(audioChunks);
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+                    
+                    selStartTime = 0;
+                    selEndTime = audioBuffer.duration;
+                    updateUI();
+                };
+
+                mediaRecorder.start();
+                btnRecord.disabled = true;
+                btnStop.disabled = false;
+                statusSpan.innerText = "Gravando...";
+                statusSpan.style.color = "red";
+            } catch (err) {
+                alert("Erro ao acessar o microfone: " + err);
+            }
+        };
+
+        btnStop.onclick = () => {
+            mediaRecorder.stop();
+            btnRecord.disabled = false;
+            btnStop.disabled = true;
+            statusSpan.innerText = "Gravação concluída.";
+            statusSpan.style.color = "green";
+        };
+
+        // 3. Interação com o Canvas (Seleção)
+        canvas.addEventListener('mousedown', (e) => {
+            if (!audioBuffer) return;
+            isDragging = true;
+            const clickTime = (e.offsetX / canvas.width) * audioBuffer.duration;
+            selStartTime = clickTime;
+            selEndTime = clickTime;
+            updateUI();
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDragging || !audioBuffer) return;
+            const dragTime = (e.offsetX / canvas.width) * audioBuffer.duration;
+            selEndTime = dragTime;
+            updateUI();
+        });
+
+        canvas.addEventListener('mouseup', () => finishDrag());
+        canvas.addEventListener('mouseleave', () => finishDrag());
+
+        function finishDrag() {
+            if (isDragging) {
+                isDragging = false;
+                if (selStartTime > selEndTime) {
+                    [selStartTime, selEndTime] = [selEndTime, selStartTime];
+                }
+                updateUI();
+            }
+        }
+
+        function updateUI() {
+            startVal.innerText = Math.min(selStartTime, selEndTime).toFixed(2);
+            endVal.innerText = Math.max(selStartTime, selEndTime).toFixed(2);
+            
+            btnPlay.disabled = false;
+            btnAnalyze.disabled = false;
+            btnSave.disabled = false;
+            
+            drawWaveform();
+        }
+
+        function drawWaveform() {
+            if (!audioBuffer) return;
+            const data = audioBuffer.getChannelData(0);
+            const step = Math.ceil(data.length / canvas.width);
+            
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = '#00ffcc';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            
+            for(let i = 0; i < canvas.width; i++) {
+                let min = 1.0, max = -1.0;
+                for(let j = 0; j < step; j++) {
+                    let datum = data[(i * step) + j];
+                    if (datum < min) min = datum;
+                    if (datum > max) max = datum;
+                }
+                ctx.moveTo(i, (1 + min) * canvas.height / 2);
+                ctx.lineTo(i, (1 + max) * canvas.height / 2);
+            }
+            ctx.stroke();
+
+            let startX = (Math.min(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
+            let endX = (Math.max(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
+            let width = endX - startX;
+
+            if (width > 0) {
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+                ctx.fillRect(startX, 0, width, canvas.height);
+                ctx.strokeStyle = '#fff';
+                ctx.beginPath();
+                ctx.moveTo(startX, 0); ctx.lineTo(startX, canvas.height);
+                ctx.moveTo(endX, 0); ctx.lineTo(endX, canvas.height);
+                ctx.stroke();
+            }
+        }
+
+        // 4. Reproduzir Seleção
+        btnPlay.onclick = () => {
+            if (!audioBuffer) return;
+            if (currentSource) currentSource.stop();
+
+            let startT = Math.min(selStartTime, selEndTime);
+            let endT = Math.max(selStartTime, selEndTime);
+            let duration = endT - startT;
+
+            if (duration <= 0.01) { startT = 0; duration = audioBuffer.duration; }
+            if (audioContext.state === 'suspended') audioContext.resume();
+
+            currentSource = audioContext.createBufferSource();
+            currentSource.buffer = audioBuffer;
+            currentSource.connect(audioContext.destination);
+            currentSource.start(0, startT, duration);
+        };
+
+        // 5. Salvar Áudio em WAV
+        btnSave.onclick = () => {
+            if (!audioBuffer) return;
+            
+            let startT = Math.min(selStartTime, selEndTime);
+            let endT = Math.max(selStartTime, selEndTime);
+            if (endT - startT <= 0.01) { startT = 0; endT = audioBuffer.duration; }
+
+            const wavBlob = audioBufferToWav(audioBuffer, startT, endT);
+            const url = URL.createObjectURL(wavBlob);
+            const a = document.createElement('a');
+            a.style.display = 'none';
+            a.href = url;
+            a.download = `audio_selecionado_${startT.toFixed(1)}s.wav`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        };
+
+        // Função utilitária para converter AudioBuffer para WAV Blob
+        function audioBufferToWav(buffer, startSec, endSec) {
+            const numChannels = buffer.numberOfChannels;
+            const sampleRate = buffer.sampleRate;
+            const startOffset = Math.floor(startSec * sampleRate);
+            const endOffset = Math.floor(endSec * sampleRate);
+            const lengthInSamples = endOffset - startOffset;
+
+            const bufferLength = lengthInSamples * numChannels * 2 + 44;
+            const arrayBuffer = new ArrayBuffer(bufferLength);
+            const view = new DataView(arrayBuffer);
+
+            let offset = 0;
+            const writeString = (str) => {
+                for (let i = 0; i < str.length; i++) {
+                    view.setUint8(offset + i, str.charCodeAt(i));
+                }
+                offset += str.length;
+            };
+
+            // WAV Header
+            writeString('RIFF');
+            view.setUint32(offset, 36 + lengthInSamples * numChannels * 2, true); offset += 4;
+            writeString('WAVE');
+            writeString('fmt ');
+            view.setUint32(offset, 16, true); offset += 4; 
+            view.setUint16(offset, 1, true); offset += 2; // PCM
+            view.setUint16(offset, numChannels, true); offset += 2;
+            view.setUint32(offset, sampleRate, true); offset += 4;
+            view.setUint32(offset, sampleRate * numChannels * 2, true); offset += 4; 
+            view.setUint16(offset, numChannels * 2, true); offset += 2; 
+            view.setUint16(offset, 16, true); offset += 2; // 16-bit
+            writeString('data');
+            view.setUint32(offset, lengthInSamples * numChannels * 2, true); offset += 4;
+
+            // Interleave e converter amostras para PCM 16-bit
+            const channels = [];
+            for (let i = 0; i < numChannels; i++) channels.push(buffer.getChannelData(i));
+
+            for (let i = 0; i < lengthInSamples; i++) {
+                for (let channel = 0; channel < numChannels; channel++) {
+                    let sample = channels[channel][startOffset + i];
+                    sample = Math.max(-1, Math.min(1, sample)); // Clamp
+                    sample = sample < 0 ? sample * 32768 : sample * 32767;
+                    view.setInt16(offset, sample, true);
+                    offset += 2;
+                }
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        // 6. Lógica de Análise
+        btnAnalyze.onclick = () => {
+            if (!audioBuffer) return;
+
+            const data = audioBuffer.getChannelData(0);
+            const sampleRate = audioBuffer.sampleRate;
+            let startT = Math.min(selStartTime, selEndTime);
+            let endT = Math.max(selStartTime, selEndTime);
+
+            if (endT - startT <= 0.01) {
+                alert("Selecione uma faixa clicando e arrastando no gráfico.");
+                return;
+            }
+
+            let startIndex = Math.floor(startT * sampleRate);
+            let endIndex = Math.floor(endT * sampleRate);
+
+            let maxAmp = 0;
+            let peakIndex = startIndex;
+            for (let i = startIndex; i <= endIndex; i++) {
+                let absVal = Math.abs(data[i]);
+                if (absVal > maxAmp) { maxAmp = absVal; peakIndex = i; }
+            }
+
+            let windowSize = 2048; 
+            let halfWindow = Math.floor(windowSize / 2);
+            let startWindow = Math.max(0, peakIndex - halfWindow);
+            let endWindow = Math.min(data.length, startWindow + windowSize);
+            let windowData = data.slice(startWindow, endWindow);
+
+            let N = windowData.length;
+            let maxMagnitude = 0;
+            let dominantFreq = 0;
+
+            for (let k = 0; k < N / 2; k++) {
+                let sumRe = 0; let sumIm = 0;
+                for (let n = 0; n < N; n++) {
+                    let angle = (2 * Math.PI * k * n) / N;
+                    let hann = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (N - 1)));
+                    let sample = windowData[n] * hann;
+                    sumRe += sample * Math.cos(angle);
+                    sumIm -= sample * Math.sin(angle);
+                }
+                let magnitude = Math.sqrt(sumRe * sumRe + sumIm * sumIm);
+                if (magnitude > maxMagnitude) {
+                    maxMagnitude = magnitude;
+                    dominantFreq = (k * sampleRate) / N;
+                }
+            }
+
+            const timeOfPeak = (peakIndex / sampleRate).toFixed(4);
+            document.getElementById('result').innerHTML = `
+                <strong>Faixa analisada:</strong> ${startT.toFixed(2)}s até ${endT.toFixed(2)}s<br><br>
+                <strong>📌 Pico de Amplitude:</strong> ${maxAmp.toFixed(5)}<br>
+                <strong>⏱️ Tempo do Pico:</strong> ${timeOfPeak}s<br>
+                <strong>🎵 Frequência Dominante no Pico:</strong> ${dominantFreq.toFixed(2)} Hz
+            `;
+        };
+    </script>
+</body>
+</html>
