@@ -17,7 +17,8 @@
         .btn-upload { background: #6f42c1; position: relative; overflow: hidden; display: inline-block; }
         .btn-upload input[type="file"] { position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity=0); opacity: 0; outline: none; cursor: pointer; display: block; }
         
-        canvas { width: 100%; height: 150px; background: #222; border-radius: 8px; margin-top: 5px; cursor: crosshair; }
+        /* O canvas agora tem 180px de altura padrão */
+        canvas { width: 100%; height: 180px; background: #222; border-radius: 8px; margin-top: 5px; cursor: crosshair; }
         
         .selection-info { font-weight: bold; width: 100%; margin-top: 10px; }
         .result { margin-top: 20px; padding: 15px; background: #e2e3e5; border-radius: 8px; font-size: 1.1em; }
@@ -32,7 +33,6 @@
         <button id="btnRecord">🎤 Gravar Som</button>
         <button id="btnStop" class="stop" disabled>⏹ Parar Gravação</button>
         
-        <!-- Botão para carregar arquivo -->
         <div class="btn-upload">
             📁 Carregar Arquivo
             <input type="file" id="fileInput" accept="audio/*">
@@ -41,7 +41,8 @@
         <span id="status">Aguardando áudio...</span>
     </div>
 
-    <canvas id="waveform" width="800" height="150"></canvas>
+    <!-- Altura aumentada para comportar a barra de tempo -->
+    <canvas id="waveform" width="800" height="180"></canvas>
 
     <div class="controls">
         <div class="selection-info">
@@ -69,6 +70,9 @@
         let selStartTime = 0;
         let selEndTime = 0;
 
+        let animationId;
+        let liveStream;
+
         const btnRecord = document.getElementById('btnRecord');
         const btnStop = document.getElementById('btnStop');
         const fileInput = document.getElementById('fileInput');
@@ -80,6 +84,9 @@
         const ctx = canvas.getContext('2d');
         const startVal = document.getElementById('startVal');
         const endVal = document.getElementById('endVal');
+
+        // Altura reservada para a barra de tempo (em pixels)
+        const timeBarHeight = 30;
 
         function initAudioContext() {
             if (!audioContext) {
@@ -113,14 +120,67 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // 2. Gravação de Áudio (Microfone)
+        // 2. Gravação de Áudio com Feedback em Tempo Real
         btnRecord.onclick = async () => {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                liveStream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 initAudioContext();
-                mediaRecorder = new MediaRecorder(stream);
-                audioChunks = [];
+                
+                const source = audioContext.createMediaStreamSource(liveStream);
+                const analyser = audioContext.createAnalyser();
+                analyser.fftSize = 2048;
+                source.connect(analyser);
+                
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
 
+                function drawLiveWaveform() {
+                    animationId = requestAnimationFrame(drawLiveWaveform);
+                    analyser.getByteTimeDomainData(dataArray);
+
+                    const waveHeight = canvas.height - timeBarHeight;
+
+                    // Fundo da onda
+                    ctx.fillStyle = '#222';
+                    ctx.fillRect(0, 0, canvas.width, waveHeight);
+                    
+                    // Fundo da barra de tempo
+                    ctx.fillStyle = '#1a1a1a';
+                    ctx.fillRect(0, waveHeight, canvas.width, timeBarHeight);
+                    
+                    // Texto indicativo
+                    ctx.fillStyle = '#aaa';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText("Gravando ao vivo...", canvas.width / 2, waveHeight + 20);
+
+                    // Desenho da onda
+                    ctx.lineWidth = 2;
+                    ctx.strokeStyle = '#00ffcc';
+                    ctx.beginPath();
+
+                    const sliceWidth = canvas.width * 1.0 / bufferLength;
+                    let x = 0;
+
+                    for(let i = 0; i < bufferLength; i++) {
+                        const v = dataArray[i] / 128.0; 
+                        const y = v * waveHeight / 2;
+
+                        if(i === 0) {
+                            ctx.moveTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                        x += sliceWidth;
+                    }
+                    ctx.lineTo(canvas.width, waveHeight / 2);
+                    ctx.stroke();
+                }
+
+                drawLiveWaveform(); 
+
+                mediaRecorder = new MediaRecorder(liveStream);
+                audioChunks = [];
                 mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
                 
                 mediaRecorder.onstop = async () => {
@@ -130,13 +190,13 @@
                     
                     selStartTime = 0;
                     selEndTime = audioBuffer.duration;
-                    updateUI();
+                    updateUI(); 
                 };
 
                 mediaRecorder.start();
                 btnRecord.disabled = true;
                 btnStop.disabled = false;
-                statusSpan.innerText = "Gravando...";
+                statusSpan.innerText = "Gravando ao vivo...";
                 statusSpan.style.color = "red";
             } catch (err) {
                 alert("Erro ao acessar o microfone: " + err);
@@ -145,6 +205,8 @@
 
         btnStop.onclick = () => {
             mediaRecorder.stop();
+            liveStream.getTracks().forEach(track => track.stop());
+            cancelAnimationFrame(animationId);
             btnRecord.disabled = false;
             btnStop.disabled = true;
             statusSpan.innerText = "Gravação concluída.";
@@ -189,20 +251,32 @@
             btnAnalyze.disabled = false;
             btnSave.disabled = false;
             
-            drawWaveform();
+            drawStaticWaveform();
         }
 
-        function drawWaveform() {
+        function drawStaticWaveform() {
             if (!audioBuffer) return;
             const data = audioBuffer.getChannelData(0);
             const step = Math.ceil(data.length / canvas.width);
+            const waveHeight = canvas.height - timeBarHeight;
             
+            // Fundo da onda
             ctx.fillStyle = '#222';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillRect(0, 0, canvas.width, waveHeight);
+            
+            // Fundo da barra de tempo inferior
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, waveHeight, canvas.width, timeBarHeight);
+            ctx.beginPath();
+            ctx.moveTo(0, waveHeight);
+            ctx.lineTo(canvas.width, waveHeight);
+            ctx.strokeStyle = '#444';
+            ctx.stroke();
+
+            // Desenhar a forma de onda
             ctx.strokeStyle = '#00ffcc';
             ctx.lineWidth = 1;
             ctx.beginPath();
-            
             for(let i = 0; i < canvas.width; i++) {
                 let min = 1.0, max = -1.0;
                 for(let j = 0; j < step; j++) {
@@ -210,18 +284,59 @@
                     if (datum < min) min = datum;
                     if (datum > max) max = datum;
                 }
-                ctx.moveTo(i, (1 + min) * canvas.height / 2);
-                ctx.lineTo(i, (1 + max) * canvas.height / 2);
+                ctx.moveTo(i, (1 + min) * waveHeight / 2);
+                ctx.lineTo(i, (1 + max) * waveHeight / 2);
             }
             ctx.stroke();
 
+            // --- DESENHAR RÉGUA DE TEMPO ---
+            ctx.fillStyle = '#aaa';
+            ctx.font = '11px Arial';
+            ctx.strokeStyle = '#888';
+            ctx.beginPath();
+            
+            let duration = audioBuffer.duration;
+            // Define o intervalo dos marcadores dependendo do tamanho do áudio
+            let interval = duration > 60 ? 10 : (duration > 10 ? 5 : (duration > 2 ? 1 : 0.5));
+            let numTicks = Math.floor(duration / interval);
+
+            for (let i = 0; i <= numTicks; i++) {
+                let t = i * interval;
+                if (t > duration) break;
+                
+                let x = (t / duration) * canvas.width;
+                
+                // Tracinho da régua
+                ctx.moveTo(x, waveHeight);
+                ctx.lineTo(x, waveHeight + 6);
+                
+                // Ajustar alinhamento do texto para não cortar nas bordas
+                let textX = x;
+                if (i === 0) {
+                    ctx.textAlign = 'left';
+                    textX = x + 2;
+                } else if (i === numTicks || t + interval > duration) {
+                    ctx.textAlign = 'right';
+                    textX = x - 2;
+                } else {
+                    ctx.textAlign = 'center';
+                }
+                
+                // Escrever o tempo (ex: 1.5s)
+                ctx.fillText(t.toFixed(1) + 's', textX, waveHeight + 20);
+            }
+            ctx.stroke();
+
+            // --- DESENHAR SELEÇÃO MOUSE ---
             let startX = (Math.min(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
             let endX = (Math.max(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
             let width = endX - startX;
 
             if (width > 0) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-                ctx.fillRect(startX, 0, width, canvas.height);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+                ctx.fillRect(startX, 0, width, canvas.height); // A seleção cobre a tela toda
+                
+                // Bordas da seleção
                 ctx.strokeStyle = '#fff';
                 ctx.beginPath();
                 ctx.moveTo(startX, 0); ctx.lineTo(startX, canvas.height);
@@ -268,7 +383,6 @@
             document.body.removeChild(a);
         };
 
-        // Função utilitária para converter AudioBuffer para WAV Blob
         function audioBufferToWav(buffer, startSec, endSec) {
             const numChannels = buffer.numberOfChannels;
             const sampleRate = buffer.sampleRate;
@@ -288,29 +402,27 @@
                 offset += str.length;
             };
 
-            // WAV Header
             writeString('RIFF');
             view.setUint32(offset, 36 + lengthInSamples * numChannels * 2, true); offset += 4;
             writeString('WAVE');
             writeString('fmt ');
             view.setUint32(offset, 16, true); offset += 4; 
-            view.setUint16(offset, 1, true); offset += 2; // PCM
+            view.setUint16(offset, 1, true); offset += 2; 
             view.setUint16(offset, numChannels, true); offset += 2;
             view.setUint32(offset, sampleRate, true); offset += 4;
             view.setUint32(offset, sampleRate * numChannels * 2, true); offset += 4; 
             view.setUint16(offset, numChannels * 2, true); offset += 2; 
-            view.setUint16(offset, 16, true); offset += 2; // 16-bit
+            view.setUint16(offset, 16, true); offset += 2; 
             writeString('data');
             view.setUint32(offset, lengthInSamples * numChannels * 2, true); offset += 4;
 
-            // Interleave e converter amostras para PCM 16-bit
             const channels = [];
             for (let i = 0; i < numChannels; i++) channels.push(buffer.getChannelData(i));
 
             for (let i = 0; i < lengthInSamples; i++) {
                 for (let channel = 0; channel < numChannels; channel++) {
                     let sample = channels[channel][startOffset + i];
-                    sample = Math.max(-1, Math.min(1, sample)); // Clamp
+                    sample = Math.max(-1, Math.min(1, sample)); 
                     sample = sample < 0 ? sample * 32768 : sample * 32767;
                     view.setInt16(offset, sample, true);
                     offset += 2;
