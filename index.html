@@ -3,181 +3,247 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engefono - Tecnologia e Fonoaudiologia</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>Engefono | Tecnologia em Fonoaudiologia</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
-        html { scroll-behavior: smooth; }
-        .hero-gradient { background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); }
-    </style>
-    <script src="download-handler.js"></script>
-</head>
-<body class="bg-gray-50 text-gray-800">
+        :root {
+            --primary: #1a4a7a;
+            --secondary: #2a9d8f;
+            --dark: #2d3436;
+            --light: #f4f7f6;
+            --accent: #e67e22;
+            --instagram: #e1306c;
+            --linkedin: #0077b5;
+            --youtube: #ff0000;
+        }
 
-    <!-- Navegação -->
-    <nav class="fixed w-full bg-white shadow-md z-50">
-        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold text-blue-700">ENGEFONO</div>
-            <div class="hidden md:flex space-x-8 font-medium">
-                <a href="#sobre" class="hover:text-blue-600 transition">Sobre</a>
-                <a href="#software" class="hover:text-blue-600 transition">Software</a>
-                <a href="#treinamento" class="hover:text-blue-600 transition">Treinamentos</a>
-                <a href="#noticias" class="hover:text-blue-600 transition">Notícias</a>
-                <a href="#contato" class="hover:text-blue-600 transition">Contato</a>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: var(--dark);
+            margin: 0;
+            background-color: #fff;
+        }
+
+        header {
+            background: linear-gradient(135deg, var(--primary), #0d2c4d);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        nav {
+            background: #fff;
+            padding: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+
+        nav a {
+            text-decoration: none;
+            color: var(--primary);
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        nav a:hover {
+            color: var(--secondary);
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: auto;
+            padding: 40px 20px;
+        }
+
+        section {
+            margin-bottom: 60px;
+        }
+
+        h2 {
+            color: var(--primary);
+            border-bottom: 2px solid var(--secondary);
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .hero-text {
+            font-size: 1.2rem;
+            max-width: 800px;
+            margin: 20px auto;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+
+        .card {
+            background: var(--light);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .card h3 {
+            color: var(--primary);
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: var(--accent);
+            color: white;
+            padding: 15px 30px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-top: 20px;
+            transition: transform 0.2s;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+            background: #d35400;
+        }
+
+        /* Estilo para Redes Sociais */
+        .social-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .social-link {
+            display: flex;
+            align-items: center;
+            padding: 20px;
+            border-radius: 10px;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+
+        .social-link i {
+            font-size: 2rem;
+            margin-right: 15px;
+        }
+
+        .social-link:hover {
+            transform: translateY(-5px);
+            filter: brightness(1.1);
+        }
+
+        .instagram { background-color: var(--instagram); }
+        .linkedin { background-color: var(--linkedin); }
+        .youtube { background-color: var(--youtube); }
+
+        .badge {
+            background: var(--primary);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+
+        .footer {
+            background: var(--dark);
+            color: white;
+            text-align: center;
+            padding: 40px 20px;
+            margin-top: 50px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>Engefono</h1>
+    <p class="hero-text">Pioneirismo na integração entre Engenharia e Fonoaudiologia para soluções tecnológicas no manejo da disfagia orofaríngea.</p>
+</header>
+
+<nav>
+    <a href="#sobre">Sobre</a>
+    <a href="#deglutisom">DeglutiSom®</a>
+    <a href="#redes-sociais">Siga-nos</a>
+</nav>
+
+<div class="container">
+    
+    <section id="sobre">
+        <h2>Histórico e Atuação</h2>
+        <p>A Engefono nasceu em <strong>2014</strong> com o propósito de desenvolver ferramentas que utilizam avanços em eletrônica e ciência de dados para modernizar o gerenciamento da disfagia. Em 2021, o software DeglutiSom já contava com mais de <strong>1.500 usuários em 16 países</strong>.</p>
+        
+        <div class="grid-3">
+            <div class="card">
+                <i class="fas fa-stethoscope fa-2x" style="color: var(--secondary)"></i>
+                <h3>Avaliação Clínica</h3>
+                <p>Uso do <strong>Protocolo PAAD</strong> para padronização diagnóstica e análises clínicas precisas.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-brain fa-2x" style="color: var(--secondary)"></i>
+                <h3>Inteligência Artificial</h3>
+                <p>Algoritmos avançados para reconhecimento de padrões de deglutição e biofeedback em tempo real.</p>
+            </div>
+            <div class="card">
+                <i class="fas fa-laptop-code fa-2x" style="color: var(--secondary)"></i>
+                <h3>Suporte Técnico</h3>
+                <p>Atendimento especializado para usuários através do canal suporte@engefono.com.br.</p>
             </div>
         </div>
-    </nav>
+    </section>
 
-    <!-- Hero Section -->
-    <section class="hero-gradient pt-32 pb-20 px-6 text-white text-center">
-        <div class="container mx-auto">
-            <h1 class="text-4xl md:text-6xl font-extrabold mb-6">Engenharia e Fonoaudiologia Integradas</h1>
-            <p class="text-xl mb-10 max-w-2xl mx-auto text-blue-100">
-                Inovação tecnológica e ferramentas de alta precisão para potencializar o diagnóstico e a terapia fonoaudiológica.
-            </p>
-            <a href="#software" class="bg-white text-blue-700 px-8 py-3 rounded-full font-bold shadow-lg hover:bg-blue-50 transition">
-                Conheça nossas Soluções
+    <section id="deglutisom" style="background: #f9f9f9; padding: 40px; border-radius: 15px; border: 1px solid #ddd;">
+        <div style="text-align: center;">
+            <span class="badge">DESTAQUE</span>
+            <h2>Programa DeglutiSom®</h2>
+        </div>
+        <p>Software projetado para a <strong>Análise Acústica dos Sons da Deglutição</strong>, permitindo capturar, digitalizar e analisar parâmetros como Frequência (Hz), Intensidade (dB) e Tempo (s). Uma ferramenta essencial para monitoramento e reabilitação.</p>
+        
+        <div style="text-align: center; margin-top: 30px;">
+            <a href="deglutisom.html" class="cta-button">Acessar Página do DeglutiSom</a>
+        </div>
+    </section>
+
+    <section id="redes-sociais">
+        <h2>Conecte-se Conosco</h2>
+        <p>Acompanhe novidades, cursos e conteúdos técnicos em nossas redes oficiais:</p>
+        
+        <div class="social-grid">
+            <a href="https://www.instagram.com/engefono/" target="_blank" class="social-link instagram">
+                <i class="fab fa-instagram"></i>
+                <span>Instagram @engefono</span>
+            </a>
+            
+            <a href="https://www.linkedin.com/in/rosane-sampaio-fonoaudiologia/" target="_blank" class="social-link linkedin">
+                <i class="fab fa-linkedin"></i>
+                <span>LinkedIn Profissional</span>
+            </a>
+            
+            <a href="https://www.youtube.com/@engefonodeglutisom3321" target="_blank" class="social-link youtube">
+                <i class="fab fa-youtube"></i>
+                <span>Canal YouTube</span>
             </a>
         </div>
     </section>
 
-    <!-- Sobre -->
-    <section id="sobre" class="py-20 px-6">
-        <div class="container mx-auto grid md:grid-cols-2 gap-12 items-center">
-            <div>
-                <h2 class="text-3xl font-bold mb-6 text-blue-900">Sobre a Engefono</h2>
-                <p class="mb-4 leading-relaxed">
-                    A Engefono nasceu da união de expertises acadêmicas e profissionais para preencher a lacuna entre a tecnologia de ponta e a prática clínica fonoaudiológica.
-                </p>
-                <p class="leading-relaxed italic border-l-4 border-blue-600 pl-4">
-                    "Transformamos dados complexos em diagnósticos precisos e acessíveis."
-                </p>
-            </div>
-            <div class="bg-blue-100 p-8 rounded-2xl">
-                <h3 class="font-bold text-xl mb-4 text-blue-800">Nossa Missão</h3>
-                <ul class="space-y-3">
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> Pesquisa Científica de Vanguarda</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> Desenvolvimento de Softwares Específicos</li>
-                    <li><i class="fas fa-check text-green-500 mr-2"></i> Capacitação Técnica Profissional</li>
-                </ul>
-            </div>
-        </div>
-    </section>
+</div>
 
-    <!-- Software -->
-    <section id="software" class="py-20 px-6 bg-white">
-        <div class="container mx-auto text-center">
-            <h2 class="text-3xl font-bold mb-12 text-blue-900">Tecnologia e Softwares</h2>
-            <div class="grid md:grid-cols-3 gap-8">
-                <div class="p-6 border rounded-xl hover:shadow-xl transition">
-                    <div class="text-blue-600 text-4xl mb-4"><i class="fas fa-wave-square"></i></div>
-                    <h3 class="font-bold text-xl mb-2">Análise Acústica</h3>
-                    <p class="text-gray-600">Processamento de sinais de voz com métricas avançadas para apoio à decisão clínica.</p>
-                </div>
-                <div class="p-6 border rounded-xl hover:shadow-xl transition">
-                    <div class="text-blue-600 text-4xl mb-4"><i class="fas fa-microchip"></i></div>
-                    <h3 class="font-bold text-xl mb-2">Processamento Digital</h3>
-                    <p class="text-gray-600">Algoritmos desenvolvidos para filtragem e extração de parâmetros fonatórios.</p>
-                </div>
-                <div class="p-6 border rounded-xl hover:shadow-xl transition">
-                    <div class="text-blue-600 text-4xl mb-4"><i class="fas fa-desktop"></i></div>
-                    <h3 class="font-bold text-xl mb-2">Suporte Técnico</h3>
-                    <p class="text-gray-600">Requisitos: Windows 10+, 4GB RAM e processador moderno para performance ideal.</p>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Treinamentos -->
-    <section id="treinamento" class="py-20 px-6 bg-gray-100">
-        <div class="container mx-auto">
-            <h2 class="text-3xl font-bold mb-12 text-center text-blue-900">Capacitação e Treinamentos</h2>
-            <div class="grid md:grid-cols-2 gap-8">
-                <div class="bg-white p-6 rounded-lg shadow flex gap-4">
-                    <div class="bg-blue-700 text-white p-4 rounded text-center min-w-[80px]">
-                        <span class="block text-2xl font-bold">2023</span>
-                        <span class="text-xs uppercase">Maio</span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg">Workshop Presencial de Voz</h3>
-                        <p class="text-gray-600 text-sm">Focado em análise acústica prática para fonoaudiólogos.</p>
-                    </div>
-                </div>
-                <div class="bg-white p-6 rounded-lg shadow flex gap-4 opacity-75">
-                    <div class="bg-gray-500 text-white p-4 rounded text-center min-w-[80px]">
-                        <span class="block text-2xl font-bold">Web</span>
-                        <span class="text-xs uppercase">EAD</span>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-lg text-gray-500">Cursos Online Disponíveis</h3>
-                        <p class="text-gray-600 text-sm">Consulte nossa grade para as próximas turmas de software.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <!-- Notícias / Publicações -->
-    <section id="noticias" class="py-20 px-6">
-        <div class="container mx-auto">
-            <h2 class="text-3xl font-bold mb-12 text-center text-blue-900">Notícias e Ciência</h2>
-            <div class="grid md:grid-cols-3 gap-6">
-                <article class="bg-white rounded-lg overflow-hidden shadow-md">
-                    <div class="h-48 bg-blue-200 flex items-center justify-center text-blue-400">
-                        <i class="fas fa-globe-europe text-5xl"></i>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold mb-2">Breath Summit - Pisa, Itália</h3>
-                        <p class="text-sm text-gray-600">A Engefono presente no congresso internacional de análise do hálito.</p>
-                    </div>
-                </article>
-                <article class="bg-white rounded-lg overflow-hidden shadow-md">
-                    <div class="h-48 bg-blue-200 flex items-center justify-center text-blue-400">
-                        <i class="fab fa-linkedin text-5xl"></i>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold mb-2">Ciência no LinkedIn</h3>
-                        <p class="text-sm text-gray-600">Divulgação de novos papers e avanços na área de tecnologia em saúde.</p>
-                    </div>
-                </article>
-                <article class="bg-white rounded-lg overflow-hidden shadow-md">
-                    <div class="h-48 bg-blue-200 flex items-center justify-center text-blue-400">
-                        <i class="fas fa-book-reader text-5xl"></i>
-                    </div>
-                    <div class="p-4">
-                        <h3 class="font-bold mb-2">Publicações Recentes</h3>
-                        <p class="text-sm text-gray-600">Confira nossos artigos científicos publicados em periódicos de renome.</p>
-                    </div>
-                </article>
-            </div>
-        </div>
-    </section>
-
-    <!-- Rodapé / Contato -->
-    <footer id="contato" class="bg-blue-900 text-white py-12 px-6">
-        <div class="container mx-auto grid md:grid-cols-3 gap-12">
-            <div>
-                <h3 class="text-xl font-bold mb-4">Engefono</h3>
-                <p class="text-blue-200">Levando a ciência da engenharia para o coração da fonoaudiologia.</p>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-4">Contato</h3>
-                <p class="text-blue-200"><i class="fas fa-envelope mr-2"></i> contato@engefono.com.br</p>
-                <p class="text-blue-200"><i class="fas fa-map-marker-alt mr-2"></i> Curitiba, PR - Brasil</p>
-            </div>
-            <div>
-                <h3 class="text-xl font-bold mb-4">Links Úteis</h3>
-                <div class="flex space-x-4">
-                    <a href="https://www.instagram.com/engefono/" class="text-2xl hover:text-blue-400"><i class="fab fa-instagram"></i></a>
-                    <a href="https://www.linkedin.com/in/rosane-sampaio-fonoaudiologia/" class="text-2xl hover:text-blue-400"><i class="fab fa-linkedin"></i></a>
-                    <a href="https://www.youtube.com/@engefonodeglutisom3321" class="text-2xl hover:text-blue-400"><i class="fab fa-youtube"></i></a>
-                </div>
-            </div>
-        </div>
-        <div class="border-t border-blue-800 mt-10 pt-6 text-center text-sm text-blue-300">
-            &copy; 2026 Engefono. Todos os direitos reservados.
-        </div>
-    </footer>
+<div class="footer">
+    <p>&copy; 2026 Engefono | engefono.com.br</p>
+    <p><small>Tecnologia e Ciência para o manejo da Disfagia.</small></p>
+</div>
 
 </body>
 </html>
