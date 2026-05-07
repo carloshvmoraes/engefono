@@ -3,493 +3,670 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DeglutiSom</title>
+    <title>DeglutiSom - Análise Acústica da Deglutição</title>
     <style>
-        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f4f4f9; color: #333; }
-        .controls { background: #fff; padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
-        button, .btn-upload { padding: 10px 15px; cursor: pointer; border: none; border-radius: 4px; background: #007bff; color: white; font-weight: bold; text-align: center; font-size: 14px;}
-        button:disabled { background: #ccc; cursor: not-allowed; }
-        button.stop { background: #dc3545; }
-        button.analyze { background: #28a745; }
-        button.play { background: #17a2b8; }
-        button.save { background: #fd7e14; }
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --danger: #dc2626;
+            --danger-hover: #b91c1c;
+            --bg: #f8fafc;
+            --card-bg: #ffffff;
+            --text: #0f172a;
+            --border: #e2e8f0;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
         
-        .btn-upload { background: #6f42c1; position: relative; overflow: hidden; display: inline-block; }
-        .btn-upload input[type="file"] { position: absolute; top: 0; right: 0; min-width: 100%; min-height: 100%; font-size: 100px; text-align: right; filter: alpha(opacity=0); opacity: 0; outline: none; cursor: pointer; display: block; }
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        label { font-weight: 600; font-size: 0.875rem; }
         
-        /* O canvas agora tem 180px de altura padrão */
-        canvas { width: 100%; height: 180px; background: #222; border-radius: 8px; margin-top: 5px; cursor: crosshair; }
+        input, select {
+            padding: 0.5rem;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+
+        .controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            margin-top: 1rem;
+        }
+
+        button {
+            padding: 0.5rem 1.5rem;
+            border: none;
+            border-radius: 4px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: white;
+        }
+
+        .btn-primary { background: var(--primary); }
+        .btn-primary:hover { background: var(--primary-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-danger:hover { background: var(--danger-hover); }
+        .btn-danger:disabled { background: #fca5a5; cursor: not-allowed; }
+
+        canvas {
+            width: 100%;
+            background: #1e293b;
+            border-radius: 4px;
+            cursor: crosshair;
+            display: block;
+        }
+
+        .oscilloscope-container { height: 100px; margin-bottom: 1rem; }
+        .waveform-container { height: 200px; position: relative; }
         
-        .selection-info { font-weight: bold; width: 100%; margin-top: 10px; }
-        .result { margin-top: 20px; padding: 15px; background: #e2e3e5; border-radius: 8px; font-size: 1.1em; }
-        #status { font-weight: bold; margin-left: auto; }
+        .session-list {
+            margin-top: 1rem;
+            max-height: 150px;
+            overflow-y: auto;
+        }
+        .session-item {
+            padding: 0.5rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+        }
+        .session-item:hover { background: var(--bg); }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid var(--border);
+        }
+        th { background: var(--bg); }
+
+        /* Print Styles */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .card { box-shadow: none; padding: 0; border: none; }
+            canvas { border: 1px solid black; }
+            @page { margin: 1cm; }
+        }
     </style>
 </head>
 <body>
 
-    <h2>DeglutiSom</h2>
+<div class="container">
+    <header>
+        <h1>DeglutiSom</h1>
+        <button class="btn-primary no-print" onclick="window.print()">Exportar PDF</button>
+    </header>
+
+    <!-- Histórico de Sessões -->
+    <div class="card no-print">
+        <h2>Sessões Salvas</h2>
+        <div class="session-list" id="sessionList"></div>
+    </div>
+
+    <!-- Dados do Paciente -->
+    <div class="card" id="patient-data">
+        <div class="grid">
+            <div class="form-group">
+                <label>Nome do Paciente</label>
+                <input type="text" id="patientName" placeholder="Ex: João da Silva">
+            </div>
+            <div class="form-group">
+                <label>Data de Nascimento</label>
+                <input type="date" id="patientBirth">
+            </div>
+            <div class="form-group">
+                <label>Doença Base</label>
+                <input type="text" id="patientDisease" value="desconhecida">
+            </div>
+            <div class="form-group">
+                <label>Consistência Alimentar</label>
+                <select id="foodConsistency">
+                    <option value="Sólido">Sólido</option>
+                    <option value="Líquido">Líquido</option>
+                    <option value="Pastoso">Pastoso</option>
+                    <option value="Deglutição Espontânea">Deglutição Espontânea</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Volume (ml)</label>
+                <input type="number" id="foodVolume" value="50">
+            </div>
+        </div>
+    </div>
+
+    <!-- Controles e Osciloscópio (Tempo Real) -->
+    <div class="card no-print">
+        <div class="controls">
+            <button id="btnRecord" class="btn-primary">Gravar Áudio</button>
+            <button id="btnStop" class="btn-danger" disabled>Parar Gravação</button>
+            <span id="recordingStatus" style="color: var(--danger); font-weight: bold; display: none;">Gravando...</span>
+        </div>
+        <div class="oscilloscope-container" style="margin-top: 1rem;">
+            <canvas id="oscilloscopeCanvas"></canvas>
+        </div>
+    </div>
+
+    <!-- Forma de Onda (Estática) -->
+    <div class="card">
+        <h2>Forma de Onda (Selecione faixas de 0.5s)</h2>
+        <div class="waveform-container" style="margin-top: 1rem;">
+            <canvas id="waveformCanvas"></canvas>
+        </div>
+        <p style="font-size: 0.8rem; color: #64748b; margin-top: 0.5rem;">
+            * Clique ou arraste sobre o gráfico acima para selecionar os trechos de deglutição.
+        </p>
+    </div>
+
+    <!-- Relatório de Análise -->
+    <div class="card">
+        <h2>Relatório de Análise Acústica</h2>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Faixa (s)</th>
+                    <th>Instante Pico (s)</th>
+                    <th>Freq. Dominante (Hz)</th>
+                    <th>Ação</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Preenchido via JS -->
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    /**
+     * DeglutiSom - Core Logic
+     * Arquitetura Baseada em Web Audio API e IndexedDB
+     */
+
+    // Constantes e Estados
+    const SELECTION_DURATION = 0.5; // Segundos
+    const FFT_SIZE = 2048; // Potência de 2 para algoritmo FFT
     
-    <div class="controls">
-        <button id="btnRecord">🎤 Gravar Som</button>
-        <button id="btnStop" class="stop" disabled>⏹ Parar Gravação</button>
+    let audioContext, analyser, microphone, mediaRecorder;
+    let audioChunks = [];
+    let audioBufferData = null; // Float32Array
+    let audioSampleRate = 44100;
+    let audioDuration = 0;
+    let selections = []; // { start: number, end: number, peakTime: number, freq: number }
+    let animationId;
+
+    // Elementos DOM
+    const oscCanvas = document.getElementById('oscilloscopeCanvas');
+    const oscCtx = oscCanvas.getContext('2d');
+    const waveCanvas = document.getElementById('waveformCanvas');
+    const waveCtx = waveCanvas.getContext('2d');
+    const btnRecord = document.getElementById('btnRecord');
+    const btnStop = document.getElementById('btnStop');
+    const statusTxt = document.getElementById('recordingStatus');
+
+    // Inicialização Visual
+    function resizeCanvas() {
+        const setSize = (canvas) => {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
+            canvas.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+        };
+        setSize(oscCanvas);
+        setSize(waveCanvas);
+        if (audioBufferData) drawWaveform();
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ==========================================
+    // 1. Captura e Tempo Real (Web Audio API)
+    // ==========================================
+    
+    btnRecord.addEventListener('click', async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            await audioContext.resume();
+
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
+            mediaRecorder.onstop = processRecording;
+            
+            mediaRecorder.start();
+            
+            btnRecord.disabled = true;
+            btnStop.disabled = false;
+            statusTxt.style.display = 'inline';
+            selections = [];
+            updateReportTable();
+            
+            drawOscilloscope();
+        } catch (err) {
+            alert("Erro ao acessar microfone. Verifique as permissões.");
+            console.error(err);
+        }
+    });
+
+    btnStop.addEventListener('click', () => {
+        mediaRecorder.stop();
+        microphone.disconnect();
+        cancelAnimationFrame(animationId);
+        btnRecord.disabled = false;
+        btnStop.disabled = true;
+        statusTxt.style.display = 'none';
         
-        <div class="btn-upload">
-            📁 Carregar Arquivo
-            <input type="file" id="fileInput" accept="audio/*">
-        </div>
+        // Limpar canvas do osciloscópio
+        oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
+    });
+
+    function drawOscilloscope() {
+        animationId = requestAnimationFrame(drawOscilloscope);
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteTimeDomainData(dataArray);
+
+        const width = oscCanvas.width / window.devicePixelRatio;
+        const height = oscCanvas.height / window.devicePixelRatio;
+
+        oscCtx.fillStyle = '#1e293b';
+        oscCtx.fillRect(0, 0, width, height);
+        oscCtx.lineWidth = 2;
+        oscCtx.strokeStyle = '#22d3ee';
+        oscCtx.beginPath();
+
+        const sliceWidth = width * 1.0 / bufferLength;
+        let x = 0;
+
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = v * height / 2;
+            if (i === 0) oscCtx.moveTo(x, y);
+            else oscCtx.lineTo(x, y);
+            x += sliceWidth;
+        }
+        oscCtx.lineTo(width, height / 2);
+        oscCtx.stroke();
+    }
+
+    // ==========================================
+    // 2. Renderização da Forma de Onda (Estática)
+    // ==========================================
+
+    async function processRecording() {
+        const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+        const arrayBuffer = await audioBlob.arrayBuffer();
         
-        <span id="status">Aguardando áudio...</span>
-    </div>
+        // Decodifica para obter os dados brutos de áudio
+        const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+        audioBufferData = audioBuffer.getChannelData(0); // Float32Array (Canal Mono)
+        audioSampleRate = audioBuffer.sampleRate;
+        audioDuration = audioBuffer.duration;
 
-    <!-- Altura aumentada para comportar a barra de tempo -->
-    <canvas id="waveform" width="800" height="180"></canvas>
+        drawWaveform();
+        saveSession(); // Salva automaticamente
+    }
 
-    <div class="controls">
-        <div class="selection-info">
-            Faixa Selecionada: <span id="startVal">0.00</span>s até <span id="endVal">0.00</span>s
-            <p style="font-weight: normal; font-size: 0.9em; color: #555; margin-top: 5px;"><em>Dica: Clique e arraste sobre a onda para selecionar.</em></p>
-        </div>
+    function drawWaveform() {
+        if (!audioBufferData) return;
+
+        const width = waveCanvas.width / window.devicePixelRatio;
+        const height = waveCanvas.height / window.devicePixelRatio;
+
+        waveCtx.fillStyle = '#1e293b';
+        waveCtx.fillRect(0, 0, width, height);
+
+        // Desenhar eixo X (Tempo)
+        waveCtx.fillStyle = '#94a3b8';
+        waveCtx.font = '10px sans-serif';
+        for(let i = 0; i <= audioDuration; i += 1) {
+            const x = (i / audioDuration) * width;
+            waveCtx.fillText(`${i}s`, x + 2, height - 2);
+            waveCtx.fillRect(x, height - 15, 1, 15);
+        }
+
+        // Simplificação de Resolução para Canvas (Peak Drawing)
+        const step = Math.ceil(audioBufferData.length / width);
+        const amp = height / 2;
+
+        waveCtx.fillStyle = '#3b82f6';
+        for (let i = 0; i < width; i++) {
+            let min = 1.0;
+            let max = -1.0;
+            for (let j = 0; j < step; j++) {
+                const datum = audioBufferData[(i * step) + j]; 
+                if (datum < min) min = datum;
+                if (datum > max) max = datum;
+            }
+            waveCtx.fillRect(i, (1 + min) * amp, 1, Math.max(1, (max - min) * amp));
+        }
+
+        // Desenhar Seleções
+        selections.forEach(sel => {
+            const xStart = (sel.start / audioDuration) * width;
+            const xEnd = (sel.end / audioDuration) * width;
+            
+            waveCtx.fillStyle = 'rgba(239, 68, 68, 0.4)'; // Fundo vermelho translúcido
+            waveCtx.fillRect(xStart, 0, xEnd - xStart, height);
+            
+            waveCtx.strokeStyle = '#ef4444';
+            waveCtx.lineWidth = 1;
+            waveCtx.strokeRect(xStart, 0, xEnd - xStart, height);
+
+            // Marcar instante de pico
+            const xPeak = (sel.peakTime / audioDuration) * width;
+            waveCtx.fillStyle = '#fbbf24'; // Linha amarela no pico
+            waveCtx.fillRect(xPeak, 0, 2, height);
+        });
+    }
+
+    // Interação com o Canvas (Mobile/Desktop)
+    function handleWaveformInteraction(e) {
+        if (!audioBufferData) return;
         
-        <button id="btnPlay" class="play" disabled>▶ Reproduzir Seleção</button>
-        <button id="btnAnalyze" class="analyze" disabled>🔍 Analisar Faixa</button>
-        <button id="btnSave" class="save" disabled>💾 Salvar Seleção (WAV)</button>
-    </div>
+        const rect = waveCanvas.getBoundingClientRect();
+        let clientX = e.clientX;
+        if(e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
+        
+        const x = clientX - rect.left;
+        const width = rect.width;
+        
+        // Mapear posição X para tempo
+        const clickTime = (x / width) * audioDuration;
+        
+        // Criar faixa de 0.5s centrada no clique, garantindo limites do áudio
+        let start = Math.max(0, clickTime - (SELECTION_DURATION / 2));
+        let end = Math.min(audioDuration, start + SELECTION_DURATION);
+        
+        if (end - start < SELECTION_DURATION && start > 0) {
+            start = Math.max(0, end - SELECTION_DURATION);
+        }
 
-    <div class="result" id="result">
-        Os resultados da análise aparecerão aqui.
-    </div>
+        analyzeSegment(start, end);
+        drawWaveform();
+    }
 
-    <script>
-        let mediaRecorder;
-        let audioChunks = [];
-        let audioContext;
-        let audioBuffer = null;
-        let currentSource = null;
+    waveCanvas.addEventListener('mousedown', handleWaveformInteraction);
+    waveCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleWaveformInteraction(e);
+    });
 
-        let isDragging = false;
-        let selStartTime = 0;
-        let selEndTime = 0;
+    // ==========================================
+    // 3. Processamento Matemático (Pico e FFT)
+    // ==========================================
 
-        let animationId;
-        let liveStream;
+    function analyzeSegment(start, end) {
+        const startIndex = Math.floor(start * audioSampleRate);
+        const endIndex = Math.floor(end * audioSampleRate);
+        const segment = audioBufferData.slice(startIndex, endIndex);
 
-        const btnRecord = document.getElementById('btnRecord');
-        const btnStop = document.getElementById('btnStop');
-        const fileInput = document.getElementById('fileInput');
-        const btnPlay = document.getElementById('btnPlay');
-        const btnAnalyze = document.getElementById('btnAnalyze');
-        const btnSave = document.getElementById('btnSave');
-        const statusSpan = document.getElementById('status');
-        const canvas = document.getElementById('waveform');
-        const ctx = canvas.getContext('2d');
-        const startVal = document.getElementById('startVal');
-        const endVal = document.getElementById('endVal');
+        // 3.1 Identificar instante de maior intensidade sonora (Pico)
+        let maxAmp = 0;
+        let peakIndexLocal = 0;
+        for (let i = 0; i < segment.length; i++) {
+            const absAmp = Math.abs(segment[i]);
+            if (absAmp > maxAmp) {
+                maxAmp = absAmp;
+                peakIndexLocal = i;
+            }
+        }
+        
+        const peakTime = start + (peakIndexLocal / audioSampleRate);
+        const globalPeakIndex = startIndex + peakIndexLocal;
 
-        // Altura reservada para a barra de tempo (em pixels)
-        const timeBarHeight = 30;
+        // 3.2 Preparar array para FFT ao redor do pico
+        const halfFft = FFT_SIZE / 2;
+        let fftStart = globalPeakIndex - halfFft;
+        let fftEnd = globalPeakIndex + halfFft;
 
-        function initAudioContext() {
-            if (!audioContext) {
-                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        if (fftStart < 0) { fftStart = 0; fftEnd = FFT_SIZE; }
+        if (fftEnd > audioBufferData.length) { fftEnd = audioBufferData.length; fftStart = fftEnd - FFT_SIZE; }
+
+        const fftSegment = audioBufferData.slice(fftStart, fftEnd);
+        
+        // Aplicação de Janela de Hann para suavizar bordas (reduzir vazamento espectral)
+        const windowed = new Float32Array(FFT_SIZE);
+        for(let i = 0; i < FFT_SIZE; i++) {
+            const multiplier = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1)));
+            windowed[i] = fftSegment[i] * multiplier;
+        }
+
+        const dominantFreq = calculateDominantFrequency(windowed, audioSampleRate);
+
+        selections.push({ start, end, peakTime, freq: dominantFreq });
+        updateReportTable();
+        saveSession();
+    }
+
+    // Algoritmo FFT Cooley-Tukey Radix-2 em JavaScript Puro
+    function calculateDominantFrequency(realInput, sampleRate) {
+        const N = realInput.length;
+        const re = new Float32Array(realInput);
+        const im = new Float32Array(N);
+
+        // Bit-reversal permutation
+        for (let i = 0; i < N; i++) {
+            let j = 0;
+            for (let k = 0, m = i; k < Math.log2(N); k++) {
+                j = (j << 1) | (m & 1);
+                m >>= 1;
+            }
+            if (j > i) {
+                [re[i], re[j]] = [re[j], re[i]];
+                [im[i], im[j]] = [im[j], im[i]];
             }
         }
 
-        // 1. Carregar Áudio de Arquivo
-        fileInput.addEventListener('change', function() {
-            const file = this.files[0];
-            if (!file) return;
+        // Transformada de Fourier
+        for (let size = 2; size <= N; size *= 2) {
+            const half = size / 2;
+            const angle = -2 * Math.PI / size;
+            const wp_re = Math.cos(angle);
+            const wp_im = Math.sin(angle);
 
-            initAudioContext();
-            statusSpan.innerText = "Carregando...";
-            statusSpan.style.color = "blue";
-
-            const reader = new FileReader();
-            reader.onload = async function(e) {
-                try {
-                    audioBuffer = await audioContext.decodeAudioData(e.target.result);
-                    selStartTime = 0;
-                    selEndTime = audioBuffer.duration;
-                    updateUI();
-                    statusSpan.innerText = "Áudio carregado!";
-                    statusSpan.style.color = "green";
-                } catch (err) {
-                    alert("Erro ao decodificar o arquivo de áudio.");
-                    statusSpan.innerText = "Erro ao carregar.";
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
-
-        // 2. Gravação de Áudio com Feedback em Tempo Real
-        btnRecord.onclick = async () => {
-            try {
-                liveStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                initAudioContext();
-                
-                const source = audioContext.createMediaStreamSource(liveStream);
-                const analyser = audioContext.createAnalyser();
-                analyser.fftSize = 2048;
-                source.connect(analyser);
-                
-                const bufferLength = analyser.frequencyBinCount;
-                const dataArray = new Uint8Array(bufferLength);
-
-                function drawLiveWaveform() {
-                    animationId = requestAnimationFrame(drawLiveWaveform);
-                    analyser.getByteTimeDomainData(dataArray);
-
-                    const waveHeight = canvas.height - timeBarHeight;
-
-                    // Fundo da onda
-                    ctx.fillStyle = '#222';
-                    ctx.fillRect(0, 0, canvas.width, waveHeight);
+            for (let i = 0; i < N; i += size) {
+                let w_re = 1, w_im = 0;
+                for (let j = 0; j < half; j++) {
+                    const idx = i + j;
+                    const halfIdx = idx + half;
                     
-                    // Fundo da barra de tempo
-                    ctx.fillStyle = '#1a1a1a';
-                    ctx.fillRect(0, waveHeight, canvas.width, timeBarHeight);
+                    const u_re = re[idx];
+                    const u_im = im[idx];
                     
-                    // Texto indicativo
-                    ctx.fillStyle = '#aaa';
-                    ctx.font = '12px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText("Gravando ao vivo...", canvas.width / 2, waveHeight + 20);
+                    const v_re = re[halfIdx] * w_re - im[halfIdx] * w_im;
+                    const v_im = re[halfIdx] * w_im + im[halfIdx] * w_re;
 
-                    // Desenho da onda
-                    ctx.lineWidth = 2;
-                    ctx.strokeStyle = '#00ffcc';
-                    ctx.beginPath();
+                    re[idx] = u_re + v_re;
+                    im[idx] = u_im + v_im;
+                    re[halfIdx] = u_re - v_re;
+                    im[halfIdx] = u_im - v_im;
 
-                    const sliceWidth = canvas.width * 1.0 / bufferLength;
-                    let x = 0;
-
-                    for(let i = 0; i < bufferLength; i++) {
-                        const v = dataArray[i] / 128.0; 
-                        const y = v * waveHeight / 2;
-
-                        if(i === 0) {
-                            ctx.moveTo(x, y);
-                        } else {
-                            ctx.lineTo(x, y);
-                        }
-                        x += sliceWidth;
-                    }
-                    ctx.lineTo(canvas.width, waveHeight / 2);
-                    ctx.stroke();
+                    const next_w_re = w_re * wp_re - w_im * wp_im;
+                    const next_w_im = w_re * wp_im + w_im * wp_re;
+                    w_re = next_w_re;
+                    w_im = next_w_im;
                 }
-
-                drawLiveWaveform(); 
-
-                mediaRecorder = new MediaRecorder(liveStream);
-                audioChunks = [];
-                mediaRecorder.ondataavailable = e => audioChunks.push(e.data);
-                
-                mediaRecorder.onstop = async () => {
-                    const audioBlob = new Blob(audioChunks);
-                    const arrayBuffer = await audioBlob.arrayBuffer();
-                    audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-                    
-                    selStartTime = 0;
-                    selEndTime = audioBuffer.duration;
-                    updateUI(); 
-                };
-
-                mediaRecorder.start();
-                btnRecord.disabled = true;
-                btnStop.disabled = false;
-                statusSpan.innerText = "Gravando ao vivo...";
-                statusSpan.style.color = "red";
-            } catch (err) {
-                alert("Erro ao acessar o microfone: " + err);
-            }
-        };
-
-        btnStop.onclick = () => {
-            mediaRecorder.stop();
-            liveStream.getTracks().forEach(track => track.stop());
-            cancelAnimationFrame(animationId);
-            btnRecord.disabled = false;
-            btnStop.disabled = true;
-            statusSpan.innerText = "Gravação concluída.";
-            statusSpan.style.color = "green";
-        };
-
-        // 3. Interação com o Canvas (Seleção)
-        canvas.addEventListener('mousedown', (e) => {
-            if (!audioBuffer) return;
-            isDragging = true;
-            const clickTime = (e.offsetX / canvas.width) * audioBuffer.duration;
-            selStartTime = clickTime;
-            selEndTime = clickTime;
-            updateUI();
-        });
-
-        canvas.addEventListener('mousemove', (e) => {
-            if (!isDragging || !audioBuffer) return;
-            const dragTime = (e.offsetX / canvas.width) * audioBuffer.duration;
-            selEndTime = dragTime;
-            updateUI();
-        });
-
-        canvas.addEventListener('mouseup', () => finishDrag());
-        canvas.addEventListener('mouseleave', () => finishDrag());
-
-        function finishDrag() {
-            if (isDragging) {
-                isDragging = false;
-                if (selStartTime > selEndTime) {
-                    [selStartTime, selEndTime] = [selEndTime, selStartTime];
-                }
-                updateUI();
             }
         }
 
-        function updateUI() {
-            startVal.innerText = Math.min(selStartTime, selEndTime).toFixed(2);
-            endVal.innerText = Math.max(selStartTime, selEndTime).toFixed(2);
-            
-            btnPlay.disabled = false;
-            btnAnalyze.disabled = false;
-            btnSave.disabled = false;
-            
-            drawStaticWaveform();
-        }
-
-        function drawStaticWaveform() {
-            if (!audioBuffer) return;
-            const data = audioBuffer.getChannelData(0);
-            const step = Math.ceil(data.length / canvas.width);
-            const waveHeight = canvas.height - timeBarHeight;
-            
-            // Fundo da onda
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0, 0, canvas.width, waveHeight);
-            
-            // Fundo da barra de tempo inferior
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, waveHeight, canvas.width, timeBarHeight);
-            ctx.beginPath();
-            ctx.moveTo(0, waveHeight);
-            ctx.lineTo(canvas.width, waveHeight);
-            ctx.strokeStyle = '#444';
-            ctx.stroke();
-
-            // Desenhar a forma de onda
-            ctx.strokeStyle = '#00ffcc';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            for(let i = 0; i < canvas.width; i++) {
-                let min = 1.0, max = -1.0;
-                for(let j = 0; j < step; j++) {
-                    let datum = data[(i * step) + j];
-                    if (datum < min) min = datum;
-                    if (datum > max) max = datum;
-                }
-                ctx.moveTo(i, (1 + min) * waveHeight / 2);
-                ctx.lineTo(i, (1 + max) * waveHeight / 2);
-            }
-            ctx.stroke();
-
-            // --- DESENHAR RÉGUA DE TEMPO ---
-            ctx.fillStyle = '#aaa';
-            ctx.font = '11px Arial';
-            ctx.strokeStyle = '#888';
-            ctx.beginPath();
-            
-            let duration = audioBuffer.duration;
-            // Define o intervalo dos marcadores dependendo do tamanho do áudio
-            let interval = duration > 60 ? 10 : (duration > 10 ? 5 : (duration > 2 ? 1 : 0.5));
-            let numTicks = Math.floor(duration / interval);
-
-            for (let i = 0; i <= numTicks; i++) {
-                let t = i * interval;
-                if (t > duration) break;
-                
-                let x = (t / duration) * canvas.width;
-                
-                // Tracinho da régua
-                ctx.moveTo(x, waveHeight);
-                ctx.lineTo(x, waveHeight + 6);
-                
-                // Ajustar alinhamento do texto para não cortar nas bordas
-                let textX = x;
-                if (i === 0) {
-                    ctx.textAlign = 'left';
-                    textX = x + 2;
-                } else if (i === numTicks || t + interval > duration) {
-                    ctx.textAlign = 'right';
-                    textX = x - 2;
-                } else {
-                    ctx.textAlign = 'center';
-                }
-                
-                // Escrever o tempo (ex: 1.5s)
-                ctx.fillText(t.toFixed(1) + 's', textX, waveHeight + 20);
-            }
-            ctx.stroke();
-
-            // --- DESENHAR SELEÇÃO MOUSE ---
-            let startX = (Math.min(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
-            let endX = (Math.max(selStartTime, selEndTime) / audioBuffer.duration) * canvas.width;
-            let width = endX - startX;
-
-            if (width > 0) {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-                ctx.fillRect(startX, 0, width, canvas.height); // A seleção cobre a tela toda
-                
-                // Bordas da seleção
-                ctx.strokeStyle = '#fff';
-                ctx.beginPath();
-                ctx.moveTo(startX, 0); ctx.lineTo(startX, canvas.height);
-                ctx.moveTo(endX, 0); ctx.lineTo(endX, canvas.height);
-                ctx.stroke();
+        // Buscar Magnitude Máxima (Frequência Dominante)
+        let maxMagnitude = 0;
+        let peakBin = 0;
+        // Analisa até Nyquist (N/2)
+        for (let i = 1; i < N / 2; i++) { 
+            const magnitude = Math.sqrt(re[i] * re[i] + im[i] * im[i]);
+            if (magnitude > maxMagnitude) {
+                maxMagnitude = magnitude;
+                peakBin = i;
             }
         }
 
-        // 4. Reproduzir Seleção
-        btnPlay.onclick = () => {
-            if (!audioBuffer) return;
-            if (currentSource) currentSource.stop();
+        return (peakBin * sampleRate) / N;
+    }
 
-            let startT = Math.min(selStartTime, selEndTime);
-            let endT = Math.max(selStartTime, selEndTime);
-            let duration = endT - startT;
+    // ==========================================
+    // 4 & 5. Relatórios e Gerenciamento de Sessão (IndexedDB)
+    // ==========================================
 
-            if (duration <= 0.01) { startT = 0; duration = audioBuffer.duration; }
-            if (audioContext.state === 'suspended') audioContext.resume();
-
-            currentSource = audioContext.createBufferSource();
-            currentSource.buffer = audioBuffer;
-            currentSource.connect(audioContext.destination);
-            currentSource.start(0, startT, duration);
-        };
-
-        // 5. Salvar Áudio em WAV
-        btnSave.onclick = () => {
-            if (!audioBuffer) return;
-            
-            let startT = Math.min(selStartTime, selEndTime);
-            let endT = Math.max(selStartTime, selEndTime);
-            if (endT - startT <= 0.01) { startT = 0; endT = audioBuffer.duration; }
-
-            const wavBlob = audioBufferToWav(audioBuffer, startT, endT);
-            const url = URL.createObjectURL(wavBlob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `audio_selecionado_${startT.toFixed(1)}s.wav`;
-            document.body.appendChild(a);
-            a.click();
-            URL.revokeObjectURL(url);
-            document.body.removeChild(a);
-        };
-
-        function audioBufferToWav(buffer, startSec, endSec) {
-            const numChannels = buffer.numberOfChannels;
-            const sampleRate = buffer.sampleRate;
-            const startOffset = Math.floor(startSec * sampleRate);
-            const endOffset = Math.floor(endSec * sampleRate);
-            const lengthInSamples = endOffset - startOffset;
-
-            const bufferLength = lengthInSamples * numChannels * 2 + 44;
-            const arrayBuffer = new ArrayBuffer(bufferLength);
-            const view = new DataView(arrayBuffer);
-
-            let offset = 0;
-            const writeString = (str) => {
-                for (let i = 0; i < str.length; i++) {
-                    view.setUint8(offset + i, str.charCodeAt(i));
-                }
-                offset += str.length;
-            };
-
-            writeString('RIFF');
-            view.setUint32(offset, 36 + lengthInSamples * numChannels * 2, true); offset += 4;
-            writeString('WAVE');
-            writeString('fmt ');
-            view.setUint32(offset, 16, true); offset += 4; 
-            view.setUint16(offset, 1, true); offset += 2; 
-            view.setUint16(offset, numChannels, true); offset += 2;
-            view.setUint32(offset, sampleRate, true); offset += 4;
-            view.setUint32(offset, sampleRate * numChannels * 2, true); offset += 4; 
-            view.setUint16(offset, numChannels * 2, true); offset += 2; 
-            view.setUint16(offset, 16, true); offset += 2; 
-            writeString('data');
-            view.setUint32(offset, lengthInSamples * numChannels * 2, true); offset += 4;
-
-            const channels = [];
-            for (let i = 0; i < numChannels; i++) channels.push(buffer.getChannelData(i));
-
-            for (let i = 0; i < lengthInSamples; i++) {
-                for (let channel = 0; channel < numChannels; channel++) {
-                    let sample = channels[channel][startOffset + i];
-                    sample = Math.max(-1, Math.min(1, sample)); 
-                    sample = sample < 0 ? sample * 32768 : sample * 32767;
-                    view.setInt16(offset, sample, true);
-                    offset += 2;
-                }
-            }
-
-            return new Blob([view], { type: 'audio/wav' });
-        }
-
-        // 6. Lógica de Análise
-        btnAnalyze.onclick = () => {
-            if (!audioBuffer) return;
-
-            const data = audioBuffer.getChannelData(0);
-            const sampleRate = audioBuffer.sampleRate;
-            let startT = Math.min(selStartTime, selEndTime);
-            let endT = Math.max(selStartTime, selEndTime);
-
-            if (endT - startT <= 0.01) {
-                alert("Selecione uma faixa clicando e arrastando no gráfico.");
-                return;
-            }
-
-            let startIndex = Math.floor(startT * sampleRate);
-            let endIndex = Math.floor(endT * sampleRate);
-
-            let maxAmp = 0;
-            let peakIndex = startIndex;
-            for (let i = startIndex; i <= endIndex; i++) {
-                let absVal = Math.abs(data[i]);
-                if (absVal > maxAmp) { maxAmp = absVal; peakIndex = i; }
-            }
-
-            let windowSize = 2048; 
-            let halfWindow = Math.floor(windowSize / 2);
-            let startWindow = Math.max(0, peakIndex - halfWindow);
-            let endWindow = Math.min(data.length, startWindow + windowSize);
-            let windowData = data.slice(startWindow, endWindow);
-
-            let N = windowData.length;
-            let maxMagnitude = 0;
-            let dominantFreq = 0;
-
-            for (let k = 0; k < N / 2; k++) {
-                let sumRe = 0; let sumIm = 0;
-                for (let n = 0; n < N; n++) {
-                    let angle = (2 * Math.PI * k * n) / N;
-                    let hann = 0.5 * (1 - Math.cos((2 * Math.PI * n) / (N - 1)));
-                    let sample = windowData[n] * hann;
-                    sumRe += sample * Math.cos(angle);
-                    sumIm -= sample * Math.sin(angle);
-                }
-                let magnitude = Math.sqrt(sumRe * sumRe + sumIm * sumIm);
-                if (magnitude > maxMagnitude) {
-                    maxMagnitude = magnitude;
-                    dominantFreq = (k * sampleRate) / N;
-                }
-            }
-
-            const timeOfPeak = (peakIndex / sampleRate).toFixed(4);
-            document.getElementById('result').innerHTML = `
-                <strong>Faixa analisada:</strong> ${startT.toFixed(2)}s até ${endT.toFixed(2)}s<br><br>
-                <strong>📌 Pico de Amplitude:</strong> ${maxAmp.toFixed(5)}<br>
-                <strong>⏱️ Tempo do Pico:</strong> ${timeOfPeak}s<br>
-                <strong>🎵 Frequência Dominante no Pico:</strong> ${dominantFreq.toFixed(2)} Hz
+    function updateReportTable() {
+        const tbody = document.querySelector('#reportTable tbody');
+        tbody.innerHTML = '';
+        selections.forEach((sel, index) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${sel.start.toFixed(3)}s - ${sel.end.toFixed(3)}s</td>
+                <td><strong>${sel.peakTime.toFixed(3)}s</strong></td>
+                <td><strong>${sel.freq.toFixed(2)} Hz</strong></td>
+                <td class="no-print"><button class="btn-danger" style="padding: 0.25rem 0.5rem" onclick="removeSelection(${index})">Remover</button></td>
             `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.removeSelection = (index) => {
+        selections.splice(index, 1);
+        drawWaveform();
+        updateReportTable();
+        saveSession();
+    };
+
+    // IndexedDB Setup
+    const dbName = "DeglutiSomDB";
+    let db;
+    
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if(!db.objectStoreNames.contains('sessions')) {
+            db.createObjectStore('sessions', { keyPath: 'id' });
+        }
+    };
+    request.onsuccess = (e) => {
+        db = e.target.result;
+        loadSessionList();
+    };
+
+    function saveSession() {
+        if (!audioBufferData || !db) return;
+
+        const session = {
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            patient: {
+                name: document.getElementById('patientName').value || 'Anônimo',
+                birth: document.getElementById('patientBirth').value,
+                disease: document.getElementById('patientDisease').value,
+                consistency: document.getElementById('foodConsistency').value,
+                volume: document.getElementById('foodVolume').value
+            },
+            audio: {
+                data: audioBufferData,
+                sampleRate: audioSampleRate,
+                duration: audioDuration
+            },
+            selections: selections
         };
-    </script>
+
+        const tx = db.transaction('sessions', 'readwrite');
+        tx.objectStore('sessions').put(session);
+        tx.oncomplete = loadSessionList;
+    }
+
+    function loadSessionList() {
+        const list = document.getElementById('sessionList');
+        list.innerHTML = '';
+        
+        const tx = db.transaction('sessions', 'readonly');
+        const store = tx.objectStore('sessions');
+        const req = store.getAll();
+        
+        req.onsuccess = () => {
+            const sessions = req.result.sort((a,b) => b.id - a.id);
+            sessions.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'session-item';
+                div.innerHTML = `<span>${s.patient.name} - ${s.date}</span> <button class="btn-primary" style="padding: 0.2rem 0.5rem">Carregar</button>`;
+                div.onclick = () => loadSessionData(s);
+                list.appendChild(div);
+            });
+        }
+    }
+
+    function loadSessionData(session) {
+        document.getElementById('patientName').value = session.patient.name;
+        document.getElementById('patientBirth').value = session.patient.birth;
+        document.getElementById('patientDisease').value = session.patient.disease;
+        document.getElementById('foodConsistency').value = session.patient.consistency;
+        document.getElementById('foodVolume').value = session.patient.volume;
+
+        audioBufferData = session.audio.data;
+        audioSampleRate = session.audio.sampleRate;
+        audioDuration = session.audio.duration;
+        selections = session.selections || [];
+
+        drawWaveform();
+        updateReportTable();
+    }
+</script>
 </body>
 </html>
