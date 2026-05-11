@@ -1,11 +1,33 @@
-Atue como um desenvolvedor front-end especialista em Web Audio API e crie uma aplicação web (Single Page Application) chamada DeglutiSom, 
-focada na análise acústica da deglutição. 
+Atue como um desenvolvedor front-end especialista em Web Audio API e crie uma aplicação web (Single Page Application) chamada DeglutiSom, focada na análise acústica da deglutição. 
 A interface deve ser moderna, rodar inteiramente no navegador sem backend complexo e conter os seguintes requisitos:
 
-1. Seguencia da interface
-Titulo: "DeglutiSom Engefono Web"
-Subtitulo: "Análise Acústica dos Sons da Deglutição"
-Região: 
+# Seguencia da interface
+## Titulo: "DeglutiSom Engefono Web"
+## Subtitulo: "Análise Acústica dos Sons da Deglutição"
+## Divisão 1
+- Lista de sessões gravadas permitindo recuperar o áudio, o nome do paciente e as análises feitas anteriormente.
+## Divisão 2
+- Botão de gravação de som diretamente do microfone do navegador.
+- Botão para abrir arquivo de som gravado no computador ou smartphone.
+- Botão de salvar o som gravado.
+- Exibir um osciloscópio mostrando a gravação da forma de onda em tempo real.
+## Divisão 3
+- Após parar a gravação, salvar o áudio na memória e renderizar a forma de onda estática completa com uma barra inferior indicando o tempo em segundos.
+- Permitir que o usuário selecione uma ou mais faixas de som de meio segundo (clicando ou arrastando na forma de onda mesmo em navegadores mobile android ou IOS).
+## Divisão 4
+- Para cada faixa selecionada, processar os dados para identificar o instante exato de maior intensidade sonora (pico de amplitude).
+- Aplicar a função matemática FFT (Transformada Rápida de Fourier) no entorno desse pico para obter e exibir a frequência dominante em Hertz (Hz).
+## Divisão 5
+- Incluir um campo de texto para preencher o "Nome do Paciente".
+- Incluir o campo de data para "Data de Nascimento".
+- Incluir o campo de texto para "Doença Base" e deixar pré-preenchido com "desconhecida".
+- Incluir o campo de seleção de "Consistência alimentar" com a opções: Sólido, Líquido, Pastoso, Deglutição Espontânea.
+- Incluir o campo numérico "Volume (ml)" pré-preenchido com "50".
+- Botão Salvar da sessão usando o armazenamento local do navegador (Local Storage ou IndexedDB)
+## Divisão 6
+- Gerar um relatório visual logo abaixo da interface, listando as marcações dos sinais (tempo inicial/final, instante de maior intensidade e frequência FFT dominante).
+- Botão Relatório: Disponibilizar um botão para exportar/baixar este relatório formatado como PDF (utilizando o formato de impressão nativo do navegador adaptado via CSS).
+
 
 1. Captura e Visualização em Tempo Real:
 Gravar o som diretamente do microfone do navegador.

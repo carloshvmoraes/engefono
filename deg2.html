@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DeglutiSom Engefono</title>
+    <link rel="icon" type="image/png" href="images/Engefono_favicon.png">
+    <style>
+        :root {
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --secondary: #475569;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --bg: #f1f5f9;
+            --card-bg: #ffffff;
+            --border: #cbd5e1;
+            --text: #0f172a;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: system-ui, -apple-system, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .app-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h1 { color: var(--primary); margin-bottom: 5px; }
+        h2 { color: var(--secondary); font-size: 1.2rem; font-weight: 400; }
+        
+        .division {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary);
+        }
+
+        .division-title {
+            font-size: 1rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 5px;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            color: white;
+            transition: opacity 0.2s;
+            font-size: 0.9rem;
+        }
+        .btn:hover { opacity: 0.9; }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+        
+        .btn-primary { background: var(--primary); }
+        .btn-success { background: var(--success); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: var(--secondary); }
+
+        .toolbar { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px; align-items: center; }
+
+        input[type="file"] { display: none; }
+        .file-label {
+            background: var(--secondary);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 0.9rem;
+        }
+
+        .canvas-container {
+            width: 100%;
+            background: #1e293b;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        canvas { display: block; width: 100%; }
+        #oscilloscope { height: 100px; }
+        #waveform { height: 200px; cursor: crosshair; touch-action: none; }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-weight: 600; font-size: 0.85rem; }
+        .form-group input, .form-group select {
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 4px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid var(--border); }
+        th { background: var(--bg); font-weight: 600; }
+
+        .session-list { max-height: 150px; overflow-y: auto; }
+        .session-item {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 10px; border-bottom: 1px solid var(--border);
+            background: var(--bg); margin-bottom: 5px; border-radius: 4px;
+        }
+
+        #status-indicator {
+            color: var(--danger); font-weight: bold; display: none; animation: blink 1s infinite;
+        }
+        @keyframes blink { 50% { opacity: 0; } }
+
+        /* Impressão / PDF */
+        @media print {
+            body { background: white; padding: 0; }
+            .no-print { display: none !important; }
+            .division { border: none; box-shadow: none; padding: 10px 0; border-bottom: 1px solid #ccc; page-break-inside: avoid; }
+            .app-container { gap: 10px; }
+            #waveform { border: 1px solid black; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    
+    <header>
+        <h1>DeglutiSom Engefono Web</h1>
+        <h2>Análise Acústica dos Sons da Deglutição</h2>
+    </header>
+
+    <!-- DIVISÃO 1: Sessões -->
+    <div class="division no-print" id="div1">
+        <div class="division-title">Sessões Gravadas</div>
+        <div class="session-list" id="sessionList">
+            <p style="color: var(--secondary); font-size: 0.9rem;">Nenhuma sessão salva ainda.</p>
+        </div>
+    </div>
+
+    <!-- DIVISÃO 2: Captura / Entrada de Áudio -->
+    <div class="division no-print" id="div2">
+        <div class="division-title">Captura e Entrada de Áudio</div>
+        <div class="toolbar">
+            <button id="btnRecord" class="btn btn-danger">Gravar (Microfone)</button>
+            <button id="btnStop" class="btn btn-secondary" disabled>Parar Gravação</button>
+            <span id="status-indicator">GRAVANDO...</span>
+            
+            <span style="border-left: 1px solid var(--border); height: 20px; margin: 0 10px;"></span>
+            
+            <label class="file-label" for="fileInput">Abrir Arquivo de Som</label>
+            <input type="file" id="fileInput" accept="audio/*">
+            
+            <button id="btnSaveAudio" class="btn btn-primary" disabled>Baixar/Salvar Som</button>
+        </div>
+        <div class="canvas-container">
+            <canvas id="oscilloscope"></canvas>
+        </div>
+    </div>
+
+    <!-- DIVISÃO 3: Forma de Onda Estática -->
+    <div class="division" id="div3">
+        <div class="division-title">Forma de Onda Estática (Seleção)</div>
+        <p class="no-print" style="font-size: 0.85rem; margin-bottom: 10px; color: var(--secondary);">
+            Instrução: Clique ou arraste sobre o gráfico abaixo para selecionar faixas de 0.5s de deglutição.
+        </p>
+        <div class="canvas-container">
+            <canvas id="waveform"></canvas>
+        </div>
+    </div>
+
+    <!-- DIVISÃO 4: Processamento -->
+    <div class="division" id="div4">
+        <div class="division-title">Processamento Matemático</div>
+        <div id="processing-feedback" style="font-size: 0.95rem;">
+            <p>Aguardando seleção na Divisão 3 para extrair Pico de Amplitude e executar a Transformada Rápida de Fourier (FFT)...</p>
+        </div>
+    </div>
+
+    <!-- DIVISÃO 5: Paciente e Salvar -->
+    <div class="division no-print" id="div5">
+        <div class="division-title">Gerenciamento de Sessão e Paciente</div>
+        <div class="form-grid">
+            <div class="form-group">
+                <label>Nome do Paciente</label>
+                <input type="text" id="patName" placeholder="Nome completo">
+            </div>
+            <div class="form-group">
+                <label>Data de Nascimento</label>
+                <input type="date" id="patBirth">
+            </div>
+            <div class="form-group">
+                <label>Doença Base</label>
+                <input type="text" id="patDisease" value="desconhecida">
+            </div>
+            <div class="form-group">
+                <label>Consistência Alimentar</label>
+                <select id="patConsistency">
+                    <option value="Sólido">Sólido</option>
+                    <option value="Líquido">Líquido</option>
+                    <option value="Pastoso">Pastoso</option>
+                    <option value="Deglutição Espontânea">Deglutição Espontânea</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Volume (ml)</label>
+                <input type="number" id="patVolume" value="50">
+            </div>
+        </div>
+        <div style="margin-top: 15px;">
+            <button id="btnSaveSession" class="btn btn-success">Salvar Análise</button>
+        </div>
+    </div>
+
+    <!-- DIVISÃO 6: Relatório -->
+    <div class="division" id="div6">
+        <div class="division-title">Relatório de Análise Acústica</div>
+        <div class="toolbar no-print">
+            <button class="btn btn-primary" onclick="window.print()">Exportar Relatório em PDF</button>
+        </div>
+        <table id="reportTable">
+            <thead>
+                <tr>
+                    <th>Faixa (Início - Fim)</th>
+                    <th>Instante Pico (s)</th>
+                    <th>Frequência FFT (Hz)</th>
+                    <th class="no-print">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- Preenchido via JS -->
+            </tbody>
+        </table>
+    </div>
+
+</div>
+
+<script>
+    // ==========================================
+    // ESTADO GLOBAL
+    // ==========================================
+    let audioContext;
+    let audioBuffer = null;
+    let audioBlob = null; // Para download e armazenamento
+    let rawAudioData = null; // Float32Array do canal mono
+    let audioDuration = 0;
+    let sampleRate = 44100;
+    
+    let mediaRecorder;
+    let audioChunks = [];
+    let analyser, microphone;
+    let oscAnimationId;
+
+    let selections = []; // Armazena as análises feitas
+    const SELECTION_SIZE = 0.5; // 0.5 segundos
+
+    // Elementos DOM
+    const oscCanvas = document.getElementById('oscilloscope');
+    const oscCtx = oscCanvas.getContext('2d');
+    const wfCanvas = document.getElementById('waveform');
+    const wfCtx = wfCanvas.getContext('2d');
+
+    // ==========================================
+    // INICIALIZAÇÃO DE CANVAS
+    // ==========================================
+    function resizeCanvases() {
+        const resize = (canvas) => {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        };
+        resize(oscCanvas);
+        resize(wfCanvas);
+        if(rawAudioData) drawWaveform();
+    }
+    window.addEventListener('resize', resizeCanvases);
+    resizeCanvases(); // Inicial
+
+    function initAudioContext() {
+        if (!audioContext) {
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioContext.state === 'suspended') {
+            audioContext.resume();
+        }
+    }
+
+    // ==========================================
+    // DIVISÃO 2: GRAVAÇÃO E ENTRADA
+    // ==========================================
+    const btnRecord = document.getElementById('btnRecord');
+    const btnStop = document.getElementById('btnStop');
+    const btnSaveAudio = document.getElementById('btnSaveAudio');
+    const fileInput = document.getElementById('fileInput');
+    const statusIndicator = document.getElementById('status-indicator');
+
+    btnRecord.addEventListener('click', async () => {
+        initAudioContext();
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            microphone = audioContext.createMediaStreamSource(stream);
+            microphone.connect(analyser);
+
+            mediaRecorder = new MediaRecorder(stream);
+            audioChunks = [];
+
+            mediaRecorder.ondataavailable = e => {
+                if (e.data.size > 0) audioChunks.push(e.data);
+            };
+            
+            mediaRecorder.onstop = async () => {
+                audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                await processAudioBlob(audioBlob);
+                microphone.disconnect();
+            };
+
+            mediaRecorder.start();
+            
+            btnRecord.disabled = true;
+            btnStop.disabled = false;
+            statusIndicator.style.display = 'inline';
+            selections = []; // Reseta análises
+            updateReportUI();
+            
+            drawOscilloscope();
+        } catch (err) {
+            alert("Erro ao acessar o microfone: " + err.message);
+        }
+    });
+
+    btnStop.addEventListener('click', () => {
+        if(mediaRecorder && mediaRecorder.state !== 'inactive') {
+            mediaRecorder.stop();
+        }
+        cancelAnimationFrame(oscAnimationId);
+        oscCtx.clearRect(0, 0, oscCanvas.width, oscCanvas.height);
+        btnRecord.disabled = false;
+        btnStop.disabled = true;
+        statusIndicator.style.display = 'none';
+        btnSaveAudio.disabled = false;
+    });
+
+    fileInput.addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        initAudioContext();
+        audioBlob = file; // Guarda referência original
+        await processAudioBlob(file);
+        selections = [];
+        updateReportUI();
+        btnSaveAudio.disabled = false;
+    });
+
+    btnSaveAudio.addEventListener('click', () => {
+        if (!audioBlob) return;
+        const url = URL.createObjectURL(audioBlob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `deglutisom_audio_${Date.now()}.webm`;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { document.body.removeChild(a); window.URL.revokeObjectURL(url); }, 100);
+    });
+
+    function drawOscilloscope() {
+        oscAnimationId = requestAnimationFrame(drawOscilloscope);
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteTimeDomainData(dataArray);
+
+        oscCtx.fillStyle = '#1e293b';
+        oscCtx.fillRect(0, 0, oscCanvas.width, oscCanvas.height);
+        oscCtx.lineWidth = 2;
+        oscCtx.strokeStyle = '#0ea5e9';
+        oscCtx.beginPath();
+
+        const sliceWidth = oscCanvas.width * 1.0 / bufferLength;
+        let x = 0;
+        for (let i = 0; i < bufferLength; i++) {
+            const v = dataArray[i] / 128.0;
+            const y = v * oscCanvas.height / 2;
+            if (i === 0) oscCtx.moveTo(x, y);
+            else oscCtx.lineTo(x, y);
+            x += sliceWidth;
+        }
+        oscCtx.lineTo(oscCanvas.width, oscCanvas.height / 2);
+        oscCtx.stroke();
+    }
+
+    async function processAudioBlob(blob) {
+        const arrayBuffer = await blob.arrayBuffer();
+        // Clona para o AudioContext pois o decodeAudioData esvazia o buffer no Safari
+        const audioData = await audioContext.decodeAudioData(arrayBuffer.slice(0)); 
+        
+        audioBuffer = audioData;
+        rawAudioData = audioBuffer.getChannelData(0); // Força Mono para análise
+        sampleRate = audioBuffer.sampleRate;
+        audioDuration = audioBuffer.duration;
+        
+        drawWaveform();
+    }
+
+    // ==========================================
+    // DIVISÃO 3: FORMA DE ONDA ESTÁTICA
+    // ==========================================
+    function drawWaveform() {
+        if (!rawAudioData) return;
+
+        const w = wfCanvas.width;
+        const h = wfCanvas.height;
+
+        wfCtx.fillStyle = '#1e293b';
+        wfCtx.fillRect(0, 0, w, h);
+
+        // Barra inferior: Segundos
+        wfCtx.fillStyle = '#94a3b8';
+        wfCtx.font = '10px Arial';
+        for(let s = 0; s <= Math.ceil(audioDuration); s++) {
+            const x = (s / audioDuration) * w;
+            wfCtx.fillText(s + 's', x + 2, h - 5);
+            wfCtx.fillRect(x, h - 20, 1, 20);
+        }
+
+        // Desenhar forma de onda (Min/Max Downsampling)
+        const step = Math.ceil(rawAudioData.length / w);
+        const amp = (h - 20) / 2;
+
+        wfCtx.fillStyle = '#38bdf8';
+        for (let i = 0; i < w; i++) {
+            let min = 1.0, max = -1.0;
+            for (let j = 0; j < step; j++) {
+                const idx = (i * step) + j;
+                if(idx < rawAudioData.length) {
+                    const val = rawAudioData[idx];
+                    if (val < min) min = val;
+                    if (val > max) max = val;
+                }
+            }
+            const y = (1 + min) * amp;
+            const hLine = Math.max(1, (max - min) * amp);
+            wfCtx.fillRect(i, y, 1, hLine);
+        }
+
+        // Desenhar seleções
+        selections.forEach(sel => {
+            const xStart = (sel.start / audioDuration) * w;
+            const xEnd = (sel.end / audioDuration) * w;
+            const xPeak = (sel.peakTime / audioDuration) * w;
+
+            // Retângulo translúcido da faixa
+            wfCtx.fillStyle = 'rgba(220, 38, 38, 0.3)';
+            wfCtx.fillRect(xStart, 0, xEnd - xStart, h - 20);
+            
+            // Linha amarela no pico
+            wfCtx.fillStyle = '#fde047';
+            wfCtx.fillRect(xPeak, 0, 2, h - 20);
+        });
+    }
+
+    // Interação com o Canvas (Click / Drag)
+    function handleCanvasInteraction(e) {
+        if (!rawAudioData) return;
+        
+        const rect = wfCanvas.getBoundingClientRect();
+        let clientX = e.clientX;
+        if(e.touches && e.touches.length > 0) clientX = e.touches[0].clientX;
+        
+        const x = clientX - rect.left;
+        const clickedTime = (x / wfCanvas.width) * audioDuration;
+        
+        // Define faixa de 0.5s centrada no clique
+        let start = Math.max(0, clickedTime - (SELECTION_SIZE / 2));
+        let end = start + SELECTION_SIZE;
+        
+        // Ajusta se ultrapassar o final
+        if (end > audioDuration) {
+            end = audioDuration;
+            start = Math.max(0, end - SELECTION_SIZE);
+        }
+
+        executarProcessamentoMatematico(start, end);
+    }
+
+    wfCanvas.addEventListener('mousedown', handleCanvasInteraction);
+    wfCanvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        handleCanvasInteraction(e);
+    });
+
+    // ==========================================
+    // DIVISÃO 4: PROCESSAMENTO (PICO + FFT)
+    // ==========================================
+    function executarProcessamentoMatematico(start, end) {
+        const startIndex = Math.floor(start * sampleRate);
+        const endIndex = Math.floor(end * sampleRate);
+        const segment = rawAudioData.slice(startIndex, endIndex);
+
+        // 1. Identificar Pico de Amplitude Absoluta
+        let maxAmp = 0;
+        let peakLocalIndex = 0;
+        for (let i = 0; i < segment.length; i++) {
+            const abs = Math.abs(segment[i]);
+            if (abs > maxAmp) {
+                maxAmp = abs;
+                peakLocalIndex = i;
+            }
+        }
+        const peakTime = start + (peakLocalIndex / sampleRate);
+        const globalPeakIndex = startIndex + peakLocalIndex;
+
+        // 2. Extrair Janela para FFT (Tamanho 2048 para resolução razoável)
+        const FFT_SIZE = 2048;
+        const halfFft = FFT_SIZE / 2;
+        let fftStart = globalPeakIndex - halfFft;
+        let fftEnd = globalPeakIndex + halfFft;
+
+        // Boundaries check
+        if (fftStart < 0) { fftStart = 0; fftEnd = FFT_SIZE; }
+        if (fftEnd > rawAudioData.length) { fftEnd = rawAudioData.length; fftStart = fftEnd - FFT_SIZE; }
+
+        const windowedData = new Float32Array(FFT_SIZE);
+        for(let i = 0; i < FFT_SIZE; i++) {
+            const idx = fftStart + i;
+            if(idx < rawAudioData.length) {
+                // Aplicação de Janela de Hann para reduzir vazamento (Leakage)
+                const hann = 0.5 * (1 - Math.cos((2 * Math.PI * i) / (FFT_SIZE - 1)));
+                windowedData[i] = rawAudioData[idx] * hann;
+            }
+        }
+
+        // 3. FFT e Frequência Dominante
+        const dominantFreq = calcularFFTPura(windowedData, sampleRate);
+
+        const newSelection = { start, end, peakTime, freq: dominantFreq };
+        selections.push(newSelection);
+        
+        // Atualiza Divisão 4 (Visual)
+        document.getElementById('processing-feedback').innerHTML = `
+            <div style="background: #e0f2fe; color: #0369a1; padding: 10px; border-radius: 4px; border: 1px solid #bae6fd;">
+                <strong>Última Faixa Processada:</strong><br>
+                Tempo: ${start.toFixed(2)}s a ${end.toFixed(2)}s<br>
+                Pico Encontrado em: ${peakTime.toFixed(3)}s<br>
+                Freq. Dominante (FFT): ${dominantFreq.toFixed(2)} Hz
+            </div>
+        `;
+
+        drawWaveform();
+        updateReportUI();
+    }
+
+    // Implementação Javascript Pura de FFT (Transformada Rápida de Fourier - Cooley-Tukey Radix-2)
+    function calcularFFTPura(realInput, sRate) {
+        const N = realInput.length;
+        const re = new Float32Array(realInput);
+        const im = new Float32Array(N);
+
+        // Bit-reversal
+        for (let i = 0; i < N; i++) {
+            let j = 0;
+            for (let k = 0, m = i; k < Math.log2(N); k++) {
+                j = (j << 1) | (m & 1);
+                m >>= 1;
+            }
+            if (j > i) {
+                [re[i], re[j]] = [re[j], re[i]];
+                [im[i], im[j]] = [im[j], im[i]];
+            }
+        }
+
+        // Borboletas
+        for (let size = 2; size <= N; size *= 2) {
+            const half = size / 2;
+            const angle = -2 * Math.PI / size;
+            const wp_re = Math.cos(angle);
+            const wp_im = Math.sin(angle);
+
+            for (let i = 0; i < N; i += size) {
+                let w_re = 1, w_im = 0;
+                for (let j = 0; j < half; j++) {
+                    const idx = i + j;
+                    const halfIdx = idx + half;
+                    
+                    const u_re = re[idx];
+                    const u_im = im[idx];
+                    
+                    const v_re = re[halfIdx] * w_re - im[halfIdx] * w_im;
+                    const v_im = re[halfIdx] * w_im + im[halfIdx] * w_re;
+
+                    re[idx] = u_re + v_re;
+                    im[idx] = u_im + v_im;
+                    re[halfIdx] = u_re - v_re;
+                    im[halfIdx] = u_im - v_im;
+
+                    const next_w_re = w_re * wp_re - w_im * wp_im;
+                    const next_w_im = w_re * wp_im + w_im * wp_re;
+                    w_re = next_w_re;
+                    w_im = next_w_im;
+                }
+            }
+        }
+
+        // Encontrar Magnitude Máxima (até Nyquist N/2)
+        let maxMag = 0;
+        let peakBin = 0;
+        for (let i = 1; i < N / 2; i++) { 
+            const mag = Math.sqrt(re[i] * re[i] + im[i] * im[i]);
+            if (mag > maxMag) {
+                maxMag = mag;
+                peakBin = i;
+            }
+        }
+
+        return (peakBin * sRate) / N;
+    }
+
+    // ==========================================
+    // DIVISÃO 6: RELATÓRIO
+    // ==========================================
+    function updateReportUI() {
+        const tbody = document.querySelector('#reportTable tbody');
+        tbody.innerHTML = '';
+        if(selections.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; color:#64748b;">Nenhuma faixa selecionada.</td></tr>';
+            return;
+        }
+
+        selections.forEach((sel, idx) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${sel.start.toFixed(3)}s - ${sel.end.toFixed(3)}s</td>
+                <td><strong style="color: #ca8a04;">${sel.peakTime.toFixed(3)}s</strong></td>
+                <td><strong>${sel.freq.toFixed(2)} Hz</strong></td>
+                <td class="no-print"><button class="btn btn-danger" style="padding: 4px 8px; font-size: 0.8rem;" onclick="removeSelection(${idx})">X Remover</button></td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    window.removeSelection = (idx) => {
+        selections.splice(idx, 1);
+        drawWaveform();
+        updateReportUI();
+    };
+
+    // ==========================================
+    // DIVISÃO 1 & 5: GERENCIAMENTO DE SESSÃO (IndexedDB)
+    // ==========================================
+    const dbName = "DeglutiSomDB_V2";
+    let db;
+    
+    const request = indexedDB.open(dbName, 1);
+    request.onupgradeneeded = (e) => {
+        db = e.target.result;
+        if(!db.objectStoreNames.contains('sessions')) {
+            db.createObjectStore('sessions', { keyPath: 'id' });
+        }
+    };
+    request.onsuccess = (e) => {
+        db = e.target.result;
+        loadSessionsFromDB();
+    };
+
+    document.getElementById('btnSaveSession').addEventListener('click', () => {
+        if (!audioBlob) {
+            alert("Não há áudio carregado ou gravado para salvar a sessão.");
+            return;
+        }
+
+        const patName = document.getElementById('patName').value || "Anônimo";
+        const sessionData = {
+            id: Date.now(),
+            date: new Date().toLocaleString(),
+            audioBlob: audioBlob, // Salva o arquivo binário original bruto (webm/mp3/wav)
+            selections: selections,
+            patient: {
+                name: patName,
+                birth: document.getElementById('patBirth').value,
+                disease: document.getElementById('patDisease').value,
+                consistency: document.getElementById('patConsistency').value,
+                volume: document.getElementById('patVolume').value
+            }
+        };
+
+        const tx = db.transaction('sessions', 'readwrite');
+        tx.objectStore('sessions').put(sessionData);
+        tx.oncomplete = () => {
+            alert("Sessão salva com sucesso!");
+            loadSessionsFromDB();
+        };
+    });
+
+    function loadSessionsFromDB() {
+        if(!db) return;
+        const tx = db.transaction('sessions', 'readonly');
+        const req = tx.objectStore('sessions').getAll();
+        
+        req.onsuccess = () => {
+            const list = document.getElementById('sessionList');
+            const data = req.result.sort((a,b) => b.id - a.id);
+            
+            if(data.length === 0) {
+                list.innerHTML = '<p style="color: var(--secondary); font-size: 0.9rem;">Nenhuma sessão salva ainda.</p>';
+                return;
+            }
+
+            list.innerHTML = '';
+            data.forEach(s => {
+                const div = document.createElement('div');
+                div.className = 'session-item';
+                div.innerHTML = `
+                    <div>
+                        <strong>${s.patient.name}</strong><br>
+                        <span style="font-size: 0.8rem; color: #64748b;">${s.date} - ${s.selections.length} análise(s)</span>
+                    </div>
+                    <button class="btn btn-secondary" style="font-size: 0.8rem;" onclick="loadSpecificSession(${s.id})">Restaurar</button>
+                `;
+                list.appendChild(div);
+            });
+        };
+    }
+
+    window.loadSpecificSession = (id) => {
+        const tx = db.transaction('sessions', 'readonly');
+        const req = tx.objectStore('sessions').get(id);
+        req.onsuccess = async () => {
+            const s = req.result;
+            if(!s) return;
+
+            // Preenche formulário (Divisão 5)
+            document.getElementById('patName').value = s.patient.name;
+            document.getElementById('patBirth').value = s.patient.birth;
+            document.getElementById('patDisease').value = s.patient.disease;
+            document.getElementById('patConsistency').value = s.patient.consistency;
+            document.getElementById('patVolume').value = s.patient.volume;
+
+            // Restaura Audio e Análises
+            initAudioContext();
+            audioBlob = s.audioBlob;
+            selections = s.selections || [];
+            
+            await processAudioBlob(audioBlob);
+            
+            document.getElementById('processing-feedback').innerHTML = `<p>Sessão de ${s.patient.name} restaurada com sucesso.</p>`;
+            btnSaveAudio.disabled = false;
+            updateReportUI();
+            
+            alert(`Sessão de ${s.patient.name} carregada!`);
+        };
+    };
+
+</script>
+</body>
+</html>

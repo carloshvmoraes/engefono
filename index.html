@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Engefono | Tecnologia em Fonoaudiologia</title>
+    <title>Engefono | Engenharia e Fonoaudiologia</title>
     
     <!-- FAVICON -->
     <link rel="icon" type="image/png" href="images/Engefono_favicon.png">
@@ -17,6 +17,7 @@
             --secondary: #2a9d8f;
             --dark: #2d3436;
             --light: #f4f7f6;
+            --header-bg: #fdfdfd; /* Cor clara para destacar o logo */
             --accent: #e67e22;
             --instagram: #e1306c;
             --linkedin: #0077b5;
@@ -31,26 +32,34 @@
             scroll-behavior: smooth;
         }
 
-        /* HEADER & LOGO */
+        /* HEADER CORRIGIDO */
         header {
-            background: linear-gradient(135deg, var(--primary), #0d2c4d);
-            color: white;
-            padding: 40px 20px;
+            background-color: var(--header-bg);
+            color: var(--primary);
+            padding: 50px 20px;
             text-align: center;
+            border-bottom: 1px solid #eee;
         }
 
         .logo-container img {
-            max-width: 350px;
+            max-width: 380px;
             height: auto;
-            margin-bottom: 20px;
-            filter: drop-shadow(0px 4px 10px rgba(0,0,0,0.3));
+            margin-bottom: 15px;
+        }
+
+        .hero-text {
+            font-size: 1.1rem;
+            max-width: 800px;
+            margin: 0 auto;
+            color: #555;
+            font-weight: 400;
         }
 
         /* NAVEGAÇÃO */
         nav {
             background: #fff;
             padding: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             position: sticky;
             top: 0;
             z-index: 1000;
@@ -64,7 +73,7 @@
             color: var(--primary);
             font-weight: 600;
             text-transform: uppercase;
-            font-size: 0.9rem;
+            font-size: 0.85rem;
             transition: 0.3s;
         }
 
@@ -76,7 +85,7 @@
         .container {
             max-width: 1100px;
             margin: auto;
-            padding: 40px 20px;
+            padding: 60px 20px;
         }
 
         section {
@@ -86,19 +95,11 @@
         h2 {
             color: var(--primary);
             border-bottom: 3px solid var(--secondary);
-            padding-bottom: 10px;
+            padding-bottom: 8px;
             display: inline-block;
-            margin-bottom: 30px;
+            margin-bottom: 35px;
         }
 
-        .hero-text {
-            font-size: 1.2rem;
-            max-width: 800px;
-            margin: 0 auto;
-            opacity: 0.9;
-        }
-
-        /* CARDS */
         .grid-3 {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -107,39 +108,36 @@
 
         .card {
             background: var(--light);
-            padding: 30px;
+            padding: 35px;
             border-radius: 12px;
             text-align: center;
-            transition: transform 0.3s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
+            border: 1px solid #e9ecef;
         }
 
         .card i {
             color: var(--secondary);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         /* SEÇÃO DEGLUTISOM */
         .product-highlight {
-            background: #f0f4f8;
+            background: #ffffff;
             padding: 50px;
             border-radius: 20px;
-            border: 1px solid #d1d9e6;
+            border: 2px solid var(--light);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
             position: relative;
         }
 
         .badge {
             background: var(--accent);
             color: white;
-            padding: 5px 15px;
+            padding: 6px 18px;
             border-radius: 50px;
             font-size: 0.75rem;
             font-weight: bold;
             position: absolute;
-            top: -12px;
+            top: -15px;
             left: 50%;
             transform: translateX(-50%);
         }
@@ -148,18 +146,17 @@
             display: inline-block;
             background: var(--primary);
             color: white;
-            padding: 18px 35px;
+            padding: 18px 40px;
             text-decoration: none;
             border-radius: 8px;
             font-weight: bold;
-            margin-top: 25px;
+            margin-top: 30px;
             transition: all 0.3s;
-            box-shadow: 0 4px 15px rgba(26, 74, 122, 0.3);
         }
 
         .cta-button:hover {
             background: var(--secondary);
-            transform: scale(1.05);
+            transform: translateY(-2px);
         }
 
         /* REDES SOCIAIS */
@@ -173,86 +170,72 @@
             display: flex;
             align-items: center;
             padding: 20px;
-            border-radius: 12px;
+            border-radius: 10px;
             text-decoration: none;
             color: white;
             font-weight: bold;
             transition: 0.3s;
         }
 
-        .social-link i {
-            font-size: 1.8rem;
-            margin-right: 15px;
-        }
-
+        .social-link i { font-size: 1.8rem; margin-right: 15px; }
         .instagram { background: var(--instagram); }
         .linkedin { background: var(--linkedin); }
         .youtube { background: var(--youtube); }
 
-        .social-link:hover {
-            opacity: 0.9;
-            transform: scale(1.02);
-        }
+        .social-link:hover { opacity: 0.9; transform: translateY(-3px); }
 
         /* RODAPÉ */
         footer {
             background: var(--dark);
             color: white;
             text-align: center;
-            padding: 50px 20px;
-        }
-
-        .footer-logo {
-            max-width: 150px;
-            filter: grayscale(1) brightness(2);
-            margin-bottom: 20px;
+            padding: 60px 20px;
         }
 
         @media (max-width: 600px) {
-            nav { gap: 15px; font-size: 0.8rem; }
             .logo-container img { max-width: 280px; }
+            nav { gap: 15px; font-size: 0.75rem; }
         }
     </style>
-    <script src="download-handler.js"></script>
 </head>
 <body>
 
 <header>
     <div class="logo-container">
-        <!-- Logo Principal -->
+        <!-- Logo com fundo claro para contraste -->
         <img src="images/Engefono_logo.png" alt="Engefono Logo">
     </div>
-    <p class="hero-text">Engenharia e Fonoaudiologia unidas para criar soluções tecnológicas de alta precisão no manejo da disfagia.</p>
+    <p class="hero-text">A Engefono é uma iniciativa que integra a <b>Engenharia e a Fonoaudiologia</b> para o desenvolvimento de ferramentas tecnológicas de alta precisão voltadas para o trabalho de fonoaudiólogos.</p>
 </header>
 
 <nav>
     <a href="#sobre">Sobre</a>
     <a href="#deglutisom">DeglutiSom®</a>
-    <a href="#redes">Conecte-se</a>
+    <a href="#redes">Redes Sociais</a>
 </nav>
 
 <div class="container">
     
     <!-- SOBRE -->
     <section id="sobre">
-        <h2>Pioneirismo e Inovação</h2>
-        <p>Desde <strong>2014</strong>, a Engefono transforma o gerenciamento da disfagia orofaríngea através da eletrônica e ciência de dados. Com presença em <strong>16 países</strong>, provemos ferramentas essenciais para fonoaudiólogos modernos.</p>
+        <h2>Histórico e Atuação</h2>
+        <p>Fundada em <strong>2014</strong>, a Engefono integra tecnologia de ponta e ciência de dados para modernizar a prática clínica. Em 2021, já contava com mais de <strong>1.500 usuários em 16 países</strong>.</p>
         
         <div class="grid-3">
             <div class="card">
                 <i class="fas fa-microchip fa-3x"></i>
-                <h3>Tecnologia Própria</h3>
-                <p>Desenvolvimento de hardware e software focado em precisão clínica e biofeedback.</p>
+                <h3>Tecnologia de Precisão</h3>
+                <p>Ferramentas eletrônicas avançadas voltadas para o trabalho de fonoaudiólogos.</p>
             </div>
             <div class="card">
-                <i class="fas fa-chart-line fa-3x"></i>
+                <i class="fas fa-book-medical fa-3x"></i>
                 <h3>Protocolo PAAD</h3>
-                <p>Padronização de análises acústicas para diagnósticos mais seguros e mensuráveis.</p>
+                <p>Padronização diagnóstica através da Avaliação Acústica da Deglutição.</p>
             </div>
             <div class="card">
-                <i class="fas fa-user-md fa-3x"></i>
-                <h3>Suporte Especializado</h3>
-                <p>Atendimento técnico direto via <strong>suporte@engefono.com.br</strong> para todos os usuários.</p>
+                <i class="fas fa-headset fa-3x"></i>
+                <h3>Suporte Técnico</h3>
+                <p>Atendimento especializado através do e-mail <strong>suporte@engefono.com.br</strong>.</p>
             </div>
         </div>
     </section>
@@ -260,45 +243,35 @@
     <!-- DEGLUTISOM -->
     <section id="deglutisom">
         <div class="product-highlight">
-            <span class="badge">SOFTWARE LÍDER</span>
+            <span class="badge">PRINCIPAL FERRAMENTA</span>
             <div style="text-align: center;">
-                <h2>DeglutiSom®</h2>
-                <p style="max-width: 700px; margin: 0 auto 30px;">
-                    O software definitivo para a <strong>Análise Acústica dos Sons da Deglutição</strong>. 
-                    Utilize Inteligência Artificial para extrair parâmetros de Frequência, Intensidade e Tempo em tempo real.
+                <h2>Software DeglutiSom®</h2>
+                <p style="max-width: 750px; margin: 0 auto 30px;">
+                    Projetado para a <strong>Análise Acústica dos Sons da Deglutição</strong>, oferecendo biofeedback em tempo real e algoritmos de IA para reconhecimento de padrões.
                 </p>
-                <div class="grid-3" style="text-align: left; background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
-                    <div>
-                        <strong><i class="fas fa-check" style="color: var(--secondary)"></i> Biofeedback</strong>
-                        <p><small>Paciente visualiza o som da deglutição na tela.</small></p>
-                    </div>
-                    <div>
-                        <strong><i class="fas fa-check" style="color: var(--secondary)"></i> Relatórios</strong>
-                        <p><small>Geração automática de laudos técnicos em PDF.</small></p>
-                    </div>
-                    <div>
-                        <strong><i class="fas fa-check" style="color: var(--secondary)"></i> Evolução</strong>
-                        <p><small>Compare exames de diferentes datas facilmente.</small></p>
-                    </div>
+                <div class="grid-3" style="text-align: left; margin-bottom: 20px;">
+                    <p><small>✓ Biofeedback visual e auditivo</small></p>
+                    <p><small>✓ Relatórios automáticos em PDF</small></p>
+                    <p><small>✓ Análise de Frequência, Intensidade e Tempo</small></p>
                 </div>
-                <a href="deglutisom.html" class="cta-button">VER DETALHES DO SOFTWARE</a>
+                <a href="deglutisom.html" class="cta-button">PÁGINA DO SOFTWARE</a>
             </div>
         </div>
     </section>
 
     <!-- REDES SOCIAIS -->
     <section id="redes">
-        <h2>Siga a Engefono</h2>
-        <p>Acompanhe nossos treinamentos, cursos e novidades tecnológicas:</p>
+        <h2>Conecte-se Conosco</h2>
+        <p>Acompanhe novidades e conteúdos técnicos em nossos canais oficiais:</p>
         <div class="social-grid">
             <a href="https://www.instagram.com/engefono/" target="_blank" class="social-link instagram">
-                <i class="fab fa-instagram"></i> Instagram
+                <i class="fab fa-instagram"></i> Instagram @engefono
             </a>
             <a href="https://www.linkedin.com/in/rosane-sampaio-fonoaudiologia/" target="_blank" class="social-link linkedin">
-                <i class="fab fa-linkedin"></i> LinkedIn
+                <i class="fab fa-linkedin"></i> LinkedIn Profissional
             </a>
             <a href="https://www.youtube.com/@engefonodeglutisom3321" target="_blank" class="social-link youtube">
-                <i class="fab fa-youtube"></i> YouTube
+                <i class="fab fa-youtube"></i> Canal YouTube
             </a>
         </div>
     </section>
@@ -306,9 +279,8 @@
 </div>
 
 <footer>
-    <img src="logo-engefono.png" alt="Engefono Logo" class="footer-logo">
-    <p><strong>Engefono.com.br</strong></p>
-    <p><small>&copy; 2026 - Tecnologia e Ciência para o manejo da Disfagia Orofaríngea.</small></p>
+    <p><strong>&copy; 2026 Engefono - Engenharia e Fonoaudiologia Integradas.</strong></p>
+    <p><small>Curitiba, Paraná - Brasil</small></p>
 </footer>
 
 </body>
